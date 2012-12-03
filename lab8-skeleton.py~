@@ -57,40 +57,49 @@ def main(argv):
 	## This is the event loop.
 	window = MainWindow()
 
-
 	#TODO: In time frame of 5 sec:
 	#TODO: Send multicast ping
 	#TODO: If receive pong, add position and remote IP:port adress to list neighbours
+	
+	#Own portnumber. TODO were to be found in variables??
+	ip, portnumber = peer.getsockname()
 
-	#1.1: Send multicast PING with initiators location
-	message = str(MSG_PING) + "," + str((x,y))
-	peer.sendto(message, (MCAST_GRP, MCAST_PORT))
-	print "PING multicastsent. :" + message
+	#1.1: Send multicast PING with initiators location 
+	# (TODO: Seq number set to 0 with ping, neighbour is set to -1,-1 since this is off the grid)
+	ping_enc_sent = message_encode(MSG_PING, 0, (x,y), (-1,-1))
+	peer.sendto(ping_enc_sent, (MCAST_GRP, MCAST_PORT))
 
 	#1.2: Check if receive PING from multicast, if so send back PONG TODO: range!
-	#if (mcast.recvfrom(10240)):
-	ping_recv, address = mcast.recvfrom(10240)
+	#TODO: if (mcast.recvfrom(10240)):
+	ping_enc_recv, address = mcast.recvfrom(10240)
+	ping_dec_recv = message_decode(ping_enc_recv)
+	type, _, initiator, _, _, _ = ping_dec_recv	#only PING can be sent on mcast
 	print "PING multicast received."
-	# Check if PING is not from itself:
-	if(address == INADDR_ANY ):
-		print "SAME"
+
+	#Check if PING is not from itself:
+	ip_ping, port_ping = address
+	if (portnumber == port_ping): 
+		print "EIGEN BERICHT, stop"
 	else: 
-		print "DIFFERENT"
-	pong_sent = str(MSG_PONG) + "," + str((x,y))
-	peer.sendto(pong_sent, address)
+		print "NIET EIGEN BERICHT, verstuur pong"
+
+	#check if PING is within range
+	pong_enc_sent = message_encode(MSG_PING, 0, initiator, (x,y))
+	peer.sendto(pong_enc_sent, address)
 	print "PONG sent"
 
-	#1.3 Check if receive PONG, add remote IP:port adress to list neighbours
-	pong_recv, (address, port) = peer.recvfrom(10240)
+	#1.3 Check if receive PONG, add position and remote IP:port adress to list neighbours
+	pong_enc_rec, (address, port) = peer.recvfrom(10240)
 	print "PONG received"
-	print pong_recv
-	print port
-	neighbours.append(port)
+	type, _, initiator, neighbour_pos, _, _ = ping_dec_recv	#only PING can be sent on mcast
+	print neighbour_pos
+	neighbour = (neighbour_pos, port)
+	neighbours.append(neighbour)
 	print "Neighbours added"
 	print neighbours	
 
-	while window.update():
-		pass
+	#while window.update():
+	#	pass
 
 
 
