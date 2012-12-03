@@ -18,8 +18,9 @@ OP_MAX  = 4        # Compute the highest sensor value.
 
 ## The multicast group and port.
 MCAST_GRP  = '224.1.1.1'
-# WHEN IN LAB USE: MCAST_PORT = 50015
-MCAST_PORT = 50000
+# MCAST_PORT + GROUPNR = 50000 + 15
+MCAST_PORT = 50015
+
 ## Period in seconds when to send ping.
 PING_PERIOD = 5.0
 
