@@ -6,34 +6,50 @@
 import sys
 import struct
 import random
+import time
 from gui import MainWindow
 from sensor import *
 from socket import *
 
-def send_ping(initiator_location, peer):
+def send_ping(peer):
 	"""
 	Send mulitcast ping
 	"""
 	#1.1: Send multicast PING with initiators location 
-	#Seq number set to 0 with ping, neighbour is set to -1,-1 since this is off the grid)
-	ping_enc_sent = message_encode(MSG_PING, 0, initiator_location, (-1,-1))
+	#Seq number set to 0 with ping, neighbor is unknown so is set to -1,-1 since this is off the grid)
+	ping_enc_sent = message_encode(MSG_PING, 0, node_location, (-1,-1))
 	peer.sendto(ping_enc_sent, (MCAST_GRP, MCAST_PORT))
-	
+	print "SEND_PING ready"
+
+def send_pong(peer, initiator, address):
+	"""
+	Send mulitcast ping
+	"""
+	pong_location = node_location
+	pong_enc_sent = message_encode(MSG_PONG, 0, initiator, pong_location)
+	peer.sendto(pong_enc_sent, address)
+	print "SEND_PONG ready"
 
 def move():
 	"""
 	Creates random position for node in 100 x 100 grid
 	"""
-	global x, y
-	x = random.randint(0, 100)
-	y = random.randint(0, 100)
-	return (x,y)
+	global nx, ny,  node_location
+	nx = random.randint(0, 100)
+	ny = random.randint(0, 100)
+	node_location = (nx,ny)
+	return node_location
 
-def list():
-	print "\nNEIGHBOUR INFORMATION:"
-	for i in neighbours:
+def list(window):
+	"""
+	List all new neighbors responded to ping
+	"""
+	window.writeln("Neighbor INFORMATION:")
+	index = 1
+	for i in neighbors:
 		location, port = i
-		print "\nPosition:\t" + str(location) +  "\nIP:port :\t" + str(port)
+		window.writeln(str(index) + ". Position:\t" + str(location) +  ", IP:port :\t" + str(port))
+		index += 1
 
 
 def socket_subscribe_mcast(sock, ip):
@@ -71,60 +87,97 @@ def main(argv):
 	## This is the event loop.
 	window = MainWindow()
 
-	#---- 
+	#---------- BEGIN EIGEN CODE
 	# Create global variable
-	global neighbours, radius, sensorvalue, portnumber
-	neighbours = []
+	global neighbors, radius, sensorvalue, portnumber
+	neighbors = []
 	radius = 50
 	sensorvalue = random.randint(0, 10000)
 
 	# Get socket information
-	ip, portnumber = peer.getsockname()
-	# Choose random position
-	initiator_location = move()
+	_, portnumber = peer.getsockname()
 
-	# Print out information 
-	print "INFORMATION\nIP:port:\t" + str(portnumber) + "\nPosition:\t" + str(initiator_location) + "\nSensor Value:\t" + str(sensorvalue) + "\n"
+	# Set blocking to zero
+	peer.setblocking(0)
+	mcast.setblocking(0)
+
+	# Choose random position
+	move()
+
+	# Print out information in gui
+	window.write("INFORMATION\nIP:port:\t" + str(portnumber) + "\nPosition:\t" + str(node_location) + "\nSensor Value:\t" + str(sensorvalue) + "\n")
 
 	# Send multicast PING
-	send_ping(initiator_location, peer)
-
-
-
-
-	#1.2: Check if receive PING from multicast, if so send back PONG TODO: range!
-	#TODO: if (mcast.recvfrom(10240)):
-	ping_enc_recv, address = mcast.recvfrom(10240)
-	ping_dec_recv = message_decode(ping_enc_recv)
-	type, _, initiator, _, _, _ = ping_dec_recv	#only PING can be sent on mcast
-	print "PING multicast received."
-
-	#Check if PING is not from itself:
-	ip_ping, port_ping = address
-	if (portnumber == port_ping): 
-		print "EIGEN BERICHT, stop"
-	else: 
-		print "NIET EIGEN BERICHT, verstuur pong"
-
-	#TODO: check if PING is within range
-	pong_enc_sent = message_encode(MSG_PING, 0, initiator, initiator_location)
-	peer.sendto(pong_enc_sent, address)
-	print "PONG sent"
-
-	#1.3 Check if receive PONG, add position and remote IP:port adress to list neighbours
-	pong_enc_rec, (address, port) = peer.recvfrom(10240)
-	pong_dec_recv = message_decode(pong_enc_rec)
-	print "PONG received"
-	type, _, initiator, neighbour_pos, _, _ = pong_dec_recv	#only PING can be sent on mcast
-	print initiator
-	print neighbour_pos
-	neighbour = (neighbour_pos, port)
-	neighbours.append(neighbour)
-	print "Neighbours added"
-	list()	
+	send_ping(peer)
 	
-	#while window.update():
-	#	pass
+	# Set time	
+	pingtime = time.time()
+
+	while window.update():
+		# Resend PING if time > 5s, reset
+		if(time.time() - 5 > pingtime):
+			neighbors = []
+			send_ping(peer)
+			pingtime = time.time()
+			window.writeln("RESET")
+		
+		# Check for multicast message
+		try:
+			ping_enc_recv, address_mcast = mcast.recvfrom(10240)
+			ip_ping, port_ping = address_mcast
+
+			# Decode message
+			ping_dec_recv = message_decode(ping_enc_recv)
+			type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
+			ix, iy = initiator
+
+			# Ping is sent by same node		
+			if(port_ping == portnumber):
+				pass
+			# Initiator is not in same range
+			elif((abs(ny-iy)+1) * (abs(nx-ix)+1) > radius)
+				pass
+			# Initiator is in same range
+			else:
+				send_pong(peer, initiator, address_mcast)
+
+		except error:
+			pass
+
+		# receive pong
+		try:
+			pong_enc_rec, (address, port) = peer.recvfrom(10240)
+			
+			# Decode message
+			pong_dec_recv = message_decode(pong_enc_rec)
+			type, _, initiator, neighbor_pos, _, _ = pong_dec_recv	
+	
+			# Add neighbor
+			neighbor = (neighbor_pos, port)
+			neighbors.append(neighbor)
+			window.writeln("Neighbor added.")
+		except error:
+			pass
+
+		# Get commands
+		command = window.getline()
+		if (command == "ping"):
+			window.writeln("> Command entered: " + command)
+			window.writeln("Sending ping over multicast...")
+			send_ping(peer)
+
+		elif (command == "list"):
+			window.writeln("> Command entered: " + command)
+			list(window)
+
+		elif (command == "move"):
+			window.writeln("> Command entered: " + command)
+			new_location = move()
+			window.writeln("New location:" + str(new_location))
+		elif (command == ""):
+			pass
+		else:
+			window.writeln("The command \'" + str(command) + "\' is unknown.")
 
 
 
