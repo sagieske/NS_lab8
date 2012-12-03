@@ -10,6 +10,30 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
+def send_ping(initiator_location, peer):
+	"""
+	Send mulitcast ping
+	"""
+	#1.1: Send multicast PING with initiators location 
+	#Seq number set to 0 with ping, neighbour is set to -1,-1 since this is off the grid)
+	ping_enc_sent = message_encode(MSG_PING, 0, initiator_location, (-1,-1))
+	peer.sendto(ping_enc_sent, (MCAST_GRP, MCAST_PORT))
+	
+
+def move():
+	"""
+	Creates random position for node in 100 x 100 grid
+	"""
+	global x, y
+	x = random.randint(0, 100)
+	y = random.randint(0, 100)
+	return (x,y)
+
+def list():
+	print "\nNEIGHBOUR INFORMATION:"
+	for i in neighbours:
+		location, port = i
+		print "\nPosition:\t" + str(location) +  "\nIP:port :\t" + str(port)
 
 
 def socket_subscribe_mcast(sock, ip):
@@ -23,16 +47,6 @@ def main(argv):
 	"""
 	Program entry point.
 	"""
-
-	#create global variable
-	global neighbours
-	neighbours = []
-
-	global x, y, radius
-	x = random.randint(0, 100)
-	y = random.randint(0, 100)
-	radius = 50
-
 
 	## Create the multicast listener socket and suscribe to multicast.
 	mcast = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
@@ -57,17 +71,26 @@ def main(argv):
 	## This is the event loop.
 	window = MainWindow()
 
-	#TODO: In time frame of 5 sec:
-	#TODO: Send multicast ping
-	#TODO: If receive pong, add position and remote IP:port adress to list neighbours
-	
-	#Own portnumber. TODO were to be found in variables??
-	ip, portnumber = peer.getsockname()
+	#---- 
+	# Create global variable
+	global neighbours, radius, sensorvalue, portnumber
+	neighbours = []
+	radius = 50
+	sensorvalue = random.randint(0, 10000)
 
-	#1.1: Send multicast PING with initiators location 
-	# (TODO: Seq number set to 0 with ping, neighbour is set to -1,-1 since this is off the grid)
-	ping_enc_sent = message_encode(MSG_PING, 0, (x,y), (-1,-1))
-	peer.sendto(ping_enc_sent, (MCAST_GRP, MCAST_PORT))
+	# Get socket information
+	ip, portnumber = peer.getsockname()
+	# Choose random position
+	initiator_location = move()
+
+	# Print out information 
+	print "INFORMATION\nIP:port:\t" + str(portnumber) + "\nPosition:\t" + str(initiator_location) + "\nSensor Value:\t" + str(sensorvalue) + "\n"
+
+	# Send multicast PING
+	send_ping(initiator_location, peer)
+
+
+
 
 	#1.2: Check if receive PING from multicast, if so send back PONG TODO: range!
 	#TODO: if (mcast.recvfrom(10240)):
@@ -83,21 +106,21 @@ def main(argv):
 	else: 
 		print "NIET EIGEN BERICHT, verstuur pong"
 
-	#check if PING is within range
-	pong_enc_sent = message_encode(MSG_PING, 0, initiator, (x,y))
+	#TODO: check if PING is within range
+	pong_enc_sent = message_encode(MSG_PING, 0, initiator, initiator_location)
 	peer.sendto(pong_enc_sent, address)
 	print "PONG sent"
 
 	#1.3 Check if receive PONG, add position and remote IP:port adress to list neighbours
 	pong_enc_rec, (address, port) = peer.recvfrom(10240)
+	pong_dec_recv = message_decode(pong_enc_rec)
 	print "PONG received"
-	type, _, initiator, neighbour_pos, _, _ = ping_dec_recv	#only PING can be sent on mcast
-	print neighbour_pos
+	type, _, initiator, neighbour_pos, _, _ = pong_dec_recv	#only PING can be sent on mcast
 	neighbour = (neighbour_pos, port)
 	neighbours.append(neighbour)
 	print "Neighbours added"
-	print neighbours	
-
+	list()	
+	
 	#while window.update():
 	#	pass
 
