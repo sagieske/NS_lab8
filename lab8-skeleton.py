@@ -60,6 +60,16 @@ def list(window):
 When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
 """
 def same_wave():
+	pong_enc_recv, address_mcast = mcast.recvfrom(10240)
+	# Decode message
+	wave = message_decode(pong_enc_recv)
+	type, sequence, initiator, _, _, _ = wave
+	
+	# FIXME: how to check already_recieved?
+	if(type == MSG_ECHO && sequence == already_recieved):
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, _, OP_NOOP, 0)
+		
+
 	
 
 
@@ -175,8 +185,7 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-
-			elif( distance > math.pow((SENSOR_RANGE/2),2)):
+			elif( distance > math.pow((SENSOR_RANGE),2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( "radius =" + str(SENSOR_RANGE))
