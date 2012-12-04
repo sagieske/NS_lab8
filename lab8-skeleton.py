@@ -51,6 +51,24 @@ def list(window):
 		window.writeln(str(index) + ". Position:\t" + str(location) +  ", IP:port :\t" + str(port))
 		index += 1
 
+# FOR FIRST ECHO (Task 2.1)
+def send_echo(peer,window, father = (-1,-1)):
+	"""
+	Send echo to all neighbors
+	"""
+	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+	pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
+
+	# Iterate through neigbors to send echo to all
+	for i in neighbors:
+		location, address = i
+		# If known father, do not send back
+		if(father == location):
+			window.writeln("FATHER: " + str(address))
+			pass
+		else:
+			peer.sendto(pong_enc_sent, address)
+			window.writeln("Send echo to port: " + str(address))
 
 def socket_subscribe_mcast(sock, ip):
 	"""
@@ -58,21 +76,6 @@ def socket_subscribe_mcast(sock, ip):
 	"""
 	mreq = struct.pack("4sl", inet_aton(ip), INADDR_ANY)
 	sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
-
-# FOR FIRST ECHO (Task 2.1)
-def send_echo(peer,window):
-	"""
-	Send echo to all neighbors
-	"""
-	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-	pong_enc_sent = message_encode(MSG_ECHO, 0, node_location, (-1,-1), OP_NOOP)
-
-	# Iterate through neigbors to send echo
-	for i in neighbors:
-		location, address = i
-		peer.sendto(pong_enc_sent, address)
-		window.writeln("Send echo to port: " + str(address))
-
 		
 def main(argv):
 	"""
@@ -186,7 +189,8 @@ def main(argv):
 			# Receiving ECHO message
 			elif(type == 2):
 				window.writeln("Message \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
-			
+				send_echo(peer, window, initiator)				
+				
 		except error:
 			pass
 
