@@ -88,7 +88,7 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
-				window.writeln("Send echo to port: " + str(address))
+				#window.writeln("Send echo to port: " + str(address))
 
 		# Debug line
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
@@ -252,8 +252,11 @@ def main(argv):
 
 			# Receiving ECHO message
 			elif(type == 2):
-				window.writeln("Message \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
-				send_echo(peer, window, initiator, sequence)				
+				window.writeln("Message ECHO \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+				send_echo(peer, window, initiator, sequence)			
+			# Receiving ECHO REPLY message
+			elif(type == 3):
+				window.writeln("Message ECHO REPLY \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
 				
 		except error:
 			pass
