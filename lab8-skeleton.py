@@ -137,9 +137,13 @@ def main(argv):
 				pass
 			# Initiator is not in same range
 			elif((abs(ny-iy)+1) * (abs(nx-ix)+1) > radius):
+				window.writeln("NOT IN RANGE:")
+				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
+				window.writeln( str(abs(ny-iy)+1) + " * " + str(abs(nx-ix)+1) + " = " + str((abs(ny-iy)+1) * (abs(nx-ix)+1)))
 				pass
 			# Initiator is in same range
 			else:
+				window.writeln("PONG")
 				send_pong(peer, initiator, address_mcast)
 
 		
