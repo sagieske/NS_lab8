@@ -12,6 +12,8 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
+########### Task 1 #############
+
 def send_ping(peer):
 	"""
 	Send mulitcast ping
@@ -53,6 +55,19 @@ def list(window):
 		location, port = i
 		window.writeln(str(index) + ". Position:\t" + str(location) +  ", IP:port :\t" + str(port))
 		index += 1
+		
+########### Task 2 #############
+
+# 2.4
+
+
+
+# 2.5
+
+
+
+# 2.6
+
 
 
 def socket_subscribe_mcast(sock, ip):
@@ -90,7 +105,7 @@ def main(argv):
 	## This is the event loop.
 	window = MainWindow()
 
-	#---------- BEGIN EIGEN CODE
+#---------- BEGIN EIGEN CODE ------------#
 	# Create global variable
 	global neighbors, radius, sensorvalue, portnumber
 	neighbors = []
