@@ -131,6 +131,7 @@ def main(argv):
 			type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
 			ix, iy = initiator
 
+			#TODO: Check range
 			# Ping is sent by same node		
 			if(port_ping == portnumber):
 				pass
@@ -141,6 +142,7 @@ def main(argv):
 			else:
 				send_pong(peer, initiator, address_mcast)
 
+		
 		except error:
 			pass
 

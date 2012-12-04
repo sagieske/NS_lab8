@@ -136,7 +136,7 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif((abs(ny-iy)+1) * (abs(nx-ix)+1) > radius)
+			elif((abs(ny-iy)+1) * (abs(nx-ix)+1) > radius):
 				pass
 			# Initiator is in same range
 			else:
