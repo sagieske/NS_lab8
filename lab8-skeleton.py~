@@ -7,6 +7,7 @@ import sys
 import struct
 import random
 import time
+import math
 from gui import MainWindow
 from sensor import *
 from socket import *
