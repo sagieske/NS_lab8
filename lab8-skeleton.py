@@ -7,6 +7,7 @@ import sys
 import struct
 import random
 import time
+import math
 from gui import MainWindow
 from sensor import *
 from socket import *
@@ -140,7 +141,9 @@ def main(argv):
 			elif( distance > radius):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
-				window.writeln( str(abs(ny-iy)+1) + " * " + str(abs(nx-ix)+1) + " = " + str((abs(ny-iy)+1) * (abs(nx-ix)+1)))
+				window.writeln( "distance =" + str(distance))
+				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy))) + " * " + str(math.pow(abs(ny-iy))) + ")")
+
 				pass
 			# Initiator is in same range
 			else:
