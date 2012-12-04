@@ -134,7 +134,7 @@ def main(argv):
 
 			#TODO: Check range
 			# Ping is sent by same node		
-			distance = math.sqrt(math.pow(abs(ny-iy)) * math.pow(abs(nx-ix)))
+			distance = math.sqrt(math.pow(abs(ny-iy), 2) * math.pow(abs(nx-ix),2))
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
@@ -142,7 +142,7 @@ def main(argv):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( "distance =" + str(distance))
-				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy))) + " * " + str(math.pow(abs(ny-iy))) + ")")
+				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " * " + str(math.pow(abs(ny-iy),2)) + ")")
 
 				pass
 			# Initiator is in same range
