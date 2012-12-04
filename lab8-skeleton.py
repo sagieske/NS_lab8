@@ -66,13 +66,13 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 		# Get address for ECHO Reply
 		location, address = neighbors[0]
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, node_location, (-1,-1), OP_NOOP)
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_NOOP)
 		peer.sendto(pong_enc_sent, address)
-		window.writeln("Echo sent echo reply to : " + str(node_location) + "\tSequence: " + str(seqnumber))	
+		window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
 
-	# Not known father or multiple neighbors
+	# Not known father or multiple neighbors, create new wave
 	else:
-		# Increase Sequence number if father is known 
+		# Increase seqnumber when not initial wave
 		if( father != (-1,-1)):
 			seqnumber += 1
 			window.writeln("NEW WAVE with " + str(seqnumber))
@@ -80,14 +80,17 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
 
+		# Sent to all neighbors
 		for i in neighbors:
 			location, address = i
-			# If known father, do not send back
+			# If known father, do not send back to father
 			if(father == location):
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
 				window.writeln("Send echo to port: " + str(address))
+
+		# Debug line
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
 
 
