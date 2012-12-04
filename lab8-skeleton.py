@@ -55,6 +55,25 @@ def list(window):
 		
 ########### Task 2 #############
 
+# FOR FIRST ECHO (Task 2.1)
+def send_echo(peer,window, father = (-1,-1)):
+	"""
+	Send echo to all neighbors
+	"""
+	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+	pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
+
+	# Iterate through neigbors to send echo to all
+	for i in neighbors:
+		location, address = i
+		# If known father, do not send back
+		if(father == location):
+			window.writeln("FATHER: " + str(address))
+			pass
+		else:
+			peer.sendto(pong_enc_sent, address)
+			window.writeln("Send echo to port: " + str(address))
+
 # 2.4
 """
 When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
@@ -86,24 +105,7 @@ When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
 """
 
 
-# FOR FIRST ECHO (Task 2.1)
-def send_echo(peer,window, father = (-1,-1)):
-	"""
-	Send echo to all neighbors
-	"""
-	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-	pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
 
-	# Iterate through neigbors to send echo to all
-	for i in neighbors:
-		location, address = i
-		# If known father, do not send back
-		if(father == location):
-			window.writeln("FATHER: " + str(address))
-			pass
-		else:
-			peer.sendto(pong_enc_sent, address)
-			window.writeln("Send echo to port: " + str(address))
 
 def socket_subscribe_mcast(sock, ip):
 	"""
