@@ -12,6 +12,8 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
+########### Task 1 #############
+
 def send_ping(peer):
 	"""
 	Send mulitcast ping
@@ -50,6 +52,8 @@ def list(window):
 		location, port = i
 		window.writeln(str(index) + ". Position:\t" + str(location) +  ", IP:port :\t" + str(port))
 		index += 1
+		
+########### Task 2 #############
 
 # FOR FIRST ECHO (Task 2.1)
 def send_echo(peer,window, father = (-1,-1)):
@@ -81,6 +85,39 @@ def send_echo(peer,window, father = (-1,-1)):
 			else:
 				peer.sendto(pong_enc_sent, address)
 				window.writeln("Send echo to port: " + str(address))
+
+# 2.4
+"""
+When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
+"""
+def same_wave():
+	pong_enc_recv, address_mcast = mcast.recvfrom(10240)
+	# Decode message
+	wave = message_decode(pong_enc_recv)
+	type, sequence, initiator, _, _, _ = wave
+	
+	# FIXME: how to check already_recieved?
+	if(type == MSG_ECHO && sequence == already_recieved):
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, _, OP_NOOP, 0)
+		
+
+	
+
+
+# 2.5
+"""
+When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to father.
+"""
+
+
+
+# 2.6
+"""
+When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
+"""
+
+
+
 
 def socket_subscribe_mcast(sock, ip):
 	"""
@@ -117,7 +154,7 @@ def main(argv):
 	## This is the event loop.
 	window = MainWindow()
 
-	#---------- BEGIN EIGEN CODE
+#---------- BEGIN EIGEN CODE ------------#
 	# Create global variable
 	global neighbors, sensorvalue, portnumber
 	neighbors = []
