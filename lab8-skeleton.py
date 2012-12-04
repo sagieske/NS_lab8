@@ -56,23 +56,37 @@ def list(window):
 ########### Task 2 #############
 
 # FOR FIRST ECHO (Task 2.1)
-def send_echo(peer,window, father = (-1,-1)):
+def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 	"""
 	Send echo to all neighbors
 	"""
-	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-	pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
 
-	# Iterate through neigbors to send echo to all
-	for i in neighbors:
-		location, address = i
-		# If known father, do not send back
-		if(father == location):
-			window.writeln("FATHER: " + str(address))
-			pass
-		else:
-			peer.sendto(pong_enc_sent, address)
-			window.writeln("Send echo to port: " + str(address))
+	# Only 1 neighbor and already known father, send echo reply
+	if(len(neighbors) == 1 and father != (-1,-1)):
+		# Get address for ECHO Reply
+		location, address = neighbors[0]
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, node_location, (-1,-1), OP_NOOP)
+		peer.sendto(pong_enc_sent, address)
+
+	# Not known father or multiple neighbors
+	else:
+		# Increase Sequence number if father is known 
+		if( father != (-1,-1)):
+			seqnumber += 1
+			window.writeln("NEW WAVE with " + str(seqnumber))
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
+
+		for i in neighbors:
+			location, address = i
+			# If known father, do not send back
+			if(father == location):
+				#window.writeln("FATHER: " + str(address))
+				pass
+			else:
+				peer.sendto(pong_enc_sent, address)
+				window.writeln("Send echo to port: " + str(address))
 
 # 2.4
 """
@@ -202,11 +216,6 @@ def main(argv):
 			# Initiator is not in same range
 			elif( distance > math.pow(SENSOR_RANGE,2)):
 				window.writeln("NOT IN RANGE:")
-				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
-				window.writeln( "radius =" + str(SENSOR_RANGE))
-				window.writeln( "distance =" + str(distance))
-				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " + " + str(math.pow(abs(nx-ix),2)) + ")")
-
 				pass
 			# Initiator is in same range
 			else:
