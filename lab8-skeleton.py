@@ -59,14 +59,24 @@ def list(window):
 ########### Task 2 #############
 
 # 2.4
-
+"""
+When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
+"""
+def same_wave():
+	
 
 
 # 2.5
+"""
+When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to father.
+"""
 
 
 
 # 2.6
+"""
+When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
+"""
 
 
 
@@ -164,7 +174,7 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( distance > math.pow((radius/2),2)):
+			elif( distance > math.pow((radius),2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( "radius =" + str(radius))
