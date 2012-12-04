@@ -29,18 +29,15 @@ def send_pong(peer, initiator, address):
 	pong_location = node_location
 	pong_enc_sent = message_encode(MSG_PONG, 0, initiator, pong_location)
 	peer.sendto(pong_enc_sent, address)
-	print "SEND_PONG ready"
 
 def move():
 	"""
 	Creates random position for node in 100 x 100 grid
 	"""
 	global nx, ny,  node_location
-	nx = random.randint(0, 30)
-	ny = random.randint(0, 30)
+	nx = random.randint(0, GRID_SIZE)
+	ny = random.randint(0, GRID_SIZE)
 	node_location = (nx,ny)
-	
-
 	return node_location
 
 def list(window):
@@ -62,13 +59,18 @@ def socket_subscribe_mcast(sock, ip):
 	mreq = struct.pack("4sl", inet_aton(ip), INADDR_ANY)
 	sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
 
-def send_echo(peer):
+# FOR FIRST ECHO (Task 2.1)
+def send_echo(peer,window):
 	"""
 	Send echo to all neighbors
 	"""
+	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+	pong_enc_sent = message_encode(MSG_ECHO, 0, node_location, (-1,-1), OP_NOOP)
 	for i in neighbors:
-		location, port = i
-		writeln("Send echo to port: " + str(port))
+		location, (ip, port) = i
+		
+		peer.sendto(pong_enc_sent, ip)
+		window.writeln("Send echo to port: " + str((ip, port)))
 		
 def main(argv):
 	"""
@@ -100,9 +102,8 @@ def main(argv):
 
 	#---------- BEGIN EIGEN CODE
 	# Create global variable
-	global neighbors, radius, sensorvalue, portnumber
+	global neighbors, sensorvalue, portnumber
 	neighbors = []
-	radius = 50
 	sensorvalue = random.randint(0, 10000)
 
 	# Get socket information
@@ -126,7 +127,7 @@ def main(argv):
 
 	while window.update():
 		# Resend PING if time > 5s, reset
-		if(time.time() - 5 > pingtime):
+		if(time.time() - PING_PERIOD > pingtime):
 			neighbors = []
 			send_ping(peer)
 			pingtime = time.time()
@@ -149,17 +150,16 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( distance > math.pow((radius/2),2)):
+			elif( distance > math.pow((SENSOR_RANGE/2),2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
-				window.writeln( "radius =" + str(radius))
+				window.writeln( "radius =" + str(SENSOR_RANGE))
 				window.writeln( "distance =" + str(distance))
 				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " + " + str(math.pow(abs(nx-ix),2)) + ")")
 
 				pass
 			# Initiator is in same range
 			else:
-				window.writeln("PONG")
 				send_pong(peer, initiator, address_mcast)
 
 		
@@ -195,6 +195,9 @@ def main(argv):
 			window.writeln("> Command entered: " + command)
 			new_location = move()
 			window.writeln("New location:" + str(new_location))
+		elif (command == "echo"):
+			window.writeln("> Command entered: " + command)
+			send_echo(peer, window)
 		elif (command == ""):
 			pass
 		else:
