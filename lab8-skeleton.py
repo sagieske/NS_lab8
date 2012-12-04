@@ -158,7 +158,7 @@ def main(argv):
 		except error:
 			pass
 
-		# receive pong
+		# Check for receiving pong
 		try:
 			pong_enc_rec, (address, port) = peer.recvfrom(10240)
 			
@@ -173,7 +173,7 @@ def main(argv):
 		except error:
 			pass
 
-		# Get commands
+		# Get commands input
 		command = window.getline()
 		if (command == "ping"):
 			window.writeln("> Command entered: " + command)
