@@ -138,11 +138,10 @@ def main(argv):
 			distance = math.pow(abs(ny-iy), 2) + math.pow(abs(nx-ix),2)
 
 			# Ping is sent by same node		
-
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( distance > math.pow(radius,2)):
+			elif( distance > math.pow((radius/2),2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( "radius =" + str(radius))
