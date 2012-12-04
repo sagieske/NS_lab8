@@ -39,6 +39,8 @@ def move():
 	nx = random.randint(0, 100)
 	ny = random.randint(0, 100)
 	node_location = (nx,ny)
+	
+
 	return node_location
 
 def list(window):
@@ -132,17 +134,20 @@ def main(argv):
 			type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
 			ix, iy = initiator
 
-			#TODO: Check range
+			#calculate range with pythagoras
+			distance = math.pow(abs(ny-iy), 2) + math.pow(abs(nx-ix),2)
+
 			# Ping is sent by same node		
-			distance = math.sqrt(math.pow(abs(ny-iy), 2) * math.pow(abs(nx-ix),2))
+
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( distance > radius):
+			elif( distance > math.pow(radius,2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
+				window.writeln( "radius =" + str(radius))
 				window.writeln( "distance =" + str(distance))
-				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " * " + str(math.pow(abs(ny-iy),2)) + ")")
+				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " * " + str(math.pow(abs(nx-ix),2)) + ")")
 
 				pass
 			# Initiator is in same range
