@@ -24,7 +24,8 @@ MCAST_PORT = 50000
 PING_PERIOD = 5.0
 
 ## The grid size and sensor range.
-GRID_SIZE    = 100
+#TODO: CHANGE BEFORE HAND IN!!
+GRID_SIZE    = 30
 SENSOR_RANGE = 50
 
 

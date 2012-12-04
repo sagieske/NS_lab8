@@ -35,9 +35,8 @@ def move():
 	Creates random position for node in 100 x 100 grid
 	"""
 	global nx, ny,  node_location
-	#TODO: CHANGE BEFORE HAND IN!!
-	nx = random.randint(0, 30)
-	ny = random.randint(0, 30)
+	nx = random.randint(0, GRID_SIZE)
+	ny = random.randint(0, GRID_SIZE)
 	node_location = (nx,ny)
 	return node_location
 
@@ -67,11 +66,13 @@ def send_echo(peer,window):
 	"""
 	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 	pong_enc_sent = message_encode(MSG_ECHO, 0, node_location, (-1,-1), OP_NOOP)
+
+	# Iterate through neigbors to send echo
 	for i in neighbors:
-		location, (ip, port) = i
-		
-		peer.sendto(pong_enc_sent, ip)
-		window.writeln("Send echo to port: " + str((ip, port)))
+		location, address = i
+		peer.sendto(pong_enc_sent, address)
+		window.writeln("Send echo to port: " + str(address))
+
 		
 def main(argv):
 	"""
@@ -151,10 +152,10 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( distance > math.pow((GRID_SIZE/2),2)):
+			elif( distance > math.pow(SENSOR_RANGE,2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
-				window.writeln( "radius =" + str(GRID_SIZE))
+				window.writeln( "radius =" + str(SENSOR_RANGE))
 				window.writeln( "distance =" + str(distance))
 				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " + " + str(math.pow(abs(nx-ix),2)) + ")")
 
@@ -167,19 +168,26 @@ def main(argv):
 		except error:
 			pass
 
-		# Check for receiving pong
+		# Check for receiving
 		try:
 			pong_enc_rec, address = peer.recvfrom(10240)
 			# Decode message
 			pong_dec_recv = message_decode(pong_enc_rec)
-			type, _, initiator, neighbor_pos, _, _ = pong_dec_recv	
-	
-			# Add neighbor
-			neighbor = (neighbor_pos, address)
-			neighbors.append(neighbor)
-			window.writeln("Neighbor added.")
+			type, sequence, initiator, neighbor_pos, _, _ = pong_dec_recv	
+
+			# Receiving PONG message			
+			if(type == 1):
+				# Add neighbor
+				neighbor = (neighbor_pos, address)
+				neighbors.append(neighbor)
+				window.writeln("Neighbor added.")
+			# Receiving ECHO message
+			elif(type == 2):
+				window.writeln("Message \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+			
 		except error:
 			pass
+
 
 		# Get commands input
 		command = window.getline()

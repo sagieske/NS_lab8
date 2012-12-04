@@ -66,11 +66,13 @@ def send_echo(peer,window):
 	"""
 	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 	pong_enc_sent = message_encode(MSG_ECHO, 0, node_location, (-1,-1), OP_NOOP)
+
+	# Iterate through neigbors to send echo
 	for i in neighbors:
-		location, (ip, port) = i
-		
-		peer.sendto(pong_enc_sent, ip)
-		window.writeln("Send echo to port: " + str((ip, port)))
+		location, address = i
+		peer.sendto(pong_enc_sent, address)
+		window.writeln("Send echo to port: " + str(address))
+
 		
 def main(argv):
 	"""
@@ -150,7 +152,7 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( distance > math.pow((SENSOR_RANGE/2),2)):
+			elif( distance > math.pow(SENSOR_RANGE,2)):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( "radius =" + str(SENSOR_RANGE))
@@ -166,19 +168,28 @@ def main(argv):
 		except error:
 			pass
 
-		# Check for receiving pong
+		# Check for receiving messages
 		try:
 			pong_enc_rec, address = peer.recvfrom(10240)
+
 			# Decode message
 			pong_dec_recv = message_decode(pong_enc_rec)
-			type, _, initiator, neighbor_pos, _, _ = pong_dec_recv	
-	
-			# Add neighbor
-			neighbor = (neighbor_pos, address)
-			neighbors.append(neighbor)
-			window.writeln("Neighbor added.")
+			type, sequence, initiator, neighbor_pos, _, _ = pong_dec_recv	
+
+			# Receiving PONG message			
+			if(type == 1):
+				# Add neighbor
+				neighbor = (neighbor_pos, address)
+				neighbors.append(neighbor)
+				window.writeln("Neighbor added.")
+
+			# Receiving ECHO message
+			elif(type == 2):
+				window.writeln("Message \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+			
 		except error:
 			pass
+
 
 		# Get commands input
 		command = window.getline()
