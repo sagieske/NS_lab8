@@ -57,18 +57,30 @@ def send_echo(peer,window, father = (-1,-1)):
 	Send echo to all neighbors
 	"""
 	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-	pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
+	#pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
 
-	# Iterate through neigbors to send echo to all
-	for i in neighbors:
-		location, address = i
-		# If known father, do not send back
-		if(father == location):
-			window.writeln("FATHER: " + str(address))
-			pass
-		else:
-			peer.sendto(pong_enc_sent, address)
-			window.writeln("Send echo to port: " + str(address))
+	# Only 1 neighbor and already known father, send echo reply
+	if(len(neighbors) == 1 && father != (-1,-1)):
+		# Get address for ECHO Reply
+		location, address = neighbors[0]
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  0, node_location, (-1,-1), OP_NOOP)
+		peer.sendto(pong_enc_sent, address)
+
+	# Not known father or multiple neighbors
+	else:
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
+
+		for i in neighbors:
+			location, address = i
+			# If known father, do not send back
+			if(father == location):
+				#window.writeln("FATHER: " + str(address))
+				pass
+			else:
+				peer.sendto(pong_enc_sent, address)
+				window.writeln("Send echo to port: " + str(address))
 
 def socket_subscribe_mcast(sock, ip):
 	"""

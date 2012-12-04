@@ -59,13 +59,11 @@ def send_echo(peer,window, father = (-1,-1)):
 	# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 	pong_enc_sent = message_encode(MSG_ECHO,  0, node_location, (-1,-1), OP_NOOP)
 
-	# Iterate through neigbors to send echo to all
 	for i in neighbors:
 		location, address = i
 		# If known father, do not send back
 		if(father == location):
 			window.writeln("FATHER: " + str(address))
-			pass
 		else:
 			peer.sendto(pong_enc_sent, address)
 			window.writeln("Send echo to port: " + str(address))
