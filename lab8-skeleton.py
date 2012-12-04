@@ -38,8 +38,8 @@ def move():
 	Creates random position for node in 100 x 100 grid
 	"""
 	global nx, ny,  node_location
-	nx = random.randint(0, 100)
-	ny = random.randint(0, 100)
+	nx = random.randint(0, 30)
+	ny = random.randint(0, 30)
 	node_location = (nx,ny)
 	
 
@@ -77,6 +77,14 @@ def socket_subscribe_mcast(sock, ip):
 	mreq = struct.pack("4sl", inet_aton(ip), INADDR_ANY)
 	sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq)
 
+def send_echo(peer):
+	"""
+	Send echo to all neighbors
+	"""
+	for i in neighbors:
+		location, port = i
+		writeln("Send echo to port: " + str(port))
+		
 def main(argv):
 	"""
 	Program entry point.
@@ -161,7 +169,7 @@ def main(argv):
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( "radius =" + str(radius))
 				window.writeln( "distance =" + str(distance))
-				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " * " + str(math.pow(abs(nx-ix),2)) + ")")
+				window.writeln( "c =" + "root(" + str(math.pow(abs(ny-iy),2)) + " + " + str(math.pow(abs(nx-ix),2)) + ")")
 
 				pass
 			# Initiator is in same range
@@ -175,14 +183,13 @@ def main(argv):
 
 		# Check for receiving pong
 		try:
-			pong_enc_rec, (address, port) = peer.recvfrom(10240)
-			
+			pong_enc_rec, address = peer.recvfrom(10240)
 			# Decode message
 			pong_dec_recv = message_decode(pong_enc_rec)
 			type, _, initiator, neighbor_pos, _, _ = pong_dec_recv	
 	
 			# Add neighbor
-			neighbor = (neighbor_pos, port)
+			neighbor = (neighbor_pos, address)
 			neighbors.append(neighbor)
 			window.writeln("Neighbor added.")
 		except error:
