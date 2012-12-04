@@ -137,7 +137,7 @@ def main(argv):
 			if(port_ping == portnumber):
 				pass
 			# Initiator is not in same range
-			elif( > radius):
+			elif( distance > radius):
 				window.writeln("NOT IN RANGE:")
 				window.writeln( "node: "+str((nx, ny)) + "\t initiator" + str((ix,iy)))
 				window.writeln( str(abs(ny-iy)+1) + " * " + str(abs(nx-ix)+1) + " = " + str((abs(ny-iy)+1) * (abs(nx-ix)+1)))
