@@ -88,7 +88,7 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
-				window.writeln("Send echo to port: " + str(address))
+				#window.writeln("Send echo to port: " + str(address))
 
 		# Debug line
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
@@ -98,19 +98,25 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 """
 When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
 """
-def recieve_wave():
-	# Counter for replies recieved from neighbors
-	reply_counter = 0
+def receive_wave(peer, window, initiator, sequence):
+	"""
 	# Message
-	pong_enc_recv, address_mcast = mcast.recvfrom(10240)
+	#pong_enc_recv, address_mcast = mcast.recvfrom(10240)
 	# Decode message
 	wave = message_decode(pong_enc_recv)
 	type, sequence, initiator, neighbor, _, _ = wave
-	
+	"""
 	# If ECHO from same wave already recieved, send ECHO_REPLY
 	# FIXME: how to check already_recieved?
-	if(type == MSG_ECHO and sequence == already_recieved):
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, _, OP_NOOP, 0)
+
+	for recv_echo in received_echos:
+		seq_echo, initiator_echo = recv_echo
+		# Echo has been received previously, send echo reply
+		if(sequence == seq_echo and initiator_echo == initiator):		
+			pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, (-1,-1), OP_NOOP, 0)
+			window.writeln("ECHO DUBBLE") 
+			break
+	"""
 	# Else if REPLY, count replies
 	elif(type == MSG_ECHO_REPLY):
 		for i in neighbors:
@@ -119,9 +125,10 @@ def recieve_wave():
 				reply_counter += 1
 		if(reply_counter == neighbors):
 			pong_enc_sent = message_encode(MSG_ECHO_REPLY, _, initiator, _, OP_NOOP, 0)
-			
-		
-
+	"""		
+	# Add wave to received
+	received_echos.append((sequence,initiator))		
+	window.writeln("TESTING - receive wave")
 
 # 2.5
 """
@@ -177,8 +184,11 @@ def main(argv):
 #---------- BEGIN EIGEN CODE ------------#
 	# Create global variable
 	global neighbors, sensorvalue, portnumber
+	global received_echos, reply_counter
 	neighbors = []
 	sensorvalue = random.randint(0, 10000)
+	received_echos = []			# List to keep track of received echo
+	reply_counter = 0			# Counter for replies received from neighbors
 
 	# Get socket information
 	_, portnumber = peer.getsockname()
@@ -225,7 +235,6 @@ def main(argv):
 				pass
 			# Initiator is not in same range
 			elif( distance > math.pow(SENSOR_RANGE,2)):
-				#window.writeln("NOT IN RANGE:")
 				pass
 			# Initiator is in same range
 			else:
@@ -237,11 +246,11 @@ def main(argv):
 
 		# Check for receiving messages
 		try:
-			pong_enc_rec, address = peer.recvfrom(10240)
+			message_enc_recv, address = peer.recvfrom(10240)
 
 			# Decode message
-			pong_dec_recv = message_decode(pong_enc_rec)
-			type, sequence, initiator, neighbor_pos, _, _ = pong_dec_recv	
+			message_dec_recv = message_decode(message_enc_recv)
+			type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
 
 			# Receiving PONG message			
 			if(type == 1):
@@ -253,6 +262,7 @@ def main(argv):
 			# Receiving ECHO message
 			elif(type == 2):
 				window.writeln("Message ECHO \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+				receive_wave(peer, window, initiator, sequence)				
 				send_echo(peer, window, initiator, sequence)			
 			# Receiving ECHO REPLY message
 			elif(type == 3):
