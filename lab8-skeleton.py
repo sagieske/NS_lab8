@@ -52,35 +52,70 @@ def list(window):
 		location, port = i
 		window.writeln(str(index) + ". Position:\t" + str(location) +  ", IP:port :\t" + str(port))
 		index += 1
-		
-########### Task 2 #############
+
 
 def check_multicast(mcast, peer):
-		try:
-			ping_enc_recv, address_mcast = mcast.recvfrom(10240)
-			ip_ping, port_ping = address_mcast
+	"""
+	Check for receiving ping messages on multicast listener socket
+	"""
+	try:
+		ping_enc_recv, address_mcast = mcast.recvfrom(10240)
+		ip_ping, port_ping = address_mcast
+		
+		# Decode message
+		ping_dec_recv = message_decode(ping_enc_recv)
+		type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
+		ix, iy = initiator
+		
+		#calculate range with pythagoras
+		distance = math.pow(abs(ny-iy), 2) + math.pow(abs(nx-ix),2)
 
-			# Decode message
-			ping_dec_recv = message_decode(ping_enc_recv)
-			type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
-			ix, iy = initiator
-
-			#calculate range with pythagoras
-			distance = math.pow(abs(ny-iy), 2) + math.pow(abs(nx-ix),2)
-
-			# Ping is sent by same node		
-			if(port_ping == portnumber):
-				pass
-			# Initiator is not in same range
-			elif( distance > math.pow(SENSOR_RANGE,2)):
-				pass
-			# Initiator is in same range
-			else:
-				send_pong(peer, initiator, address_mcast)
-			print 'WORKING'
-		except error:
+		# Ping is sent by same node		
+		if(port_ping == portnumber):
+			pass	
+		# Initiator is not in same range
+		elif( distance > math.pow(SENSOR_RANGE,2)):
 			pass
+		# Initiator is in same range
+		else:
+			send_pong(peer, initiator, address_mcast)
 
+	except error:
+		pass
+	
+def check_socket_recv(peer, window):
+	"""
+	Check for receiving pong/echo/echo_reply messages
+	"""
+
+	# Check for receiving messages on peer socket
+	try:
+		message_enc_recv, address = peer.recvfrom(10240)
+
+		# Decode message
+		message_dec_recv = message_decode(message_enc_recv)
+		type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
+		
+		# Check type of message
+		if(type == 1):			# Receiving PONG message			
+			# Add neighbor
+			neighbor = (neighbor_pos, address)
+			neighbors.append(neighbor)
+			#window.writeln("Neighbor added.")
+			
+		elif(type == 2): 	# Receiving ECHO message
+			window.writeln("Message ECHO \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+			receive_wave(peer, window, initiator, sequence)				
+			send_echo(peer, window, initiator, sequence)			
+			
+		elif(type == 3):		# Receiving ECHO REPLY message
+			window.writeln("Message ECHO REPLY \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+			
+	except error:
+		pass
+
+
+########### Task 2 #############
 
 # FOR FIRST ECHO (Task 2.1)
 def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
@@ -243,37 +278,11 @@ def main(argv):
 			pingtime = time.time()
 			#window.writeln("------------------ reset ---------------------")
 		
-		# Check for multicast message		
+		# Check for receiving on multicast	
 		check_multicast(mcast,peer)
 
-		#check_socket_recv(peer)
-		# Check for receiving messages
-		try:
-			message_enc_recv, address = peer.recvfrom(10240)
-
-			# Decode message
-			message_dec_recv = message_decode(message_enc_recv)
-			type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
-
-			# Receiving PONG message			
-			if(type == 1):
-				# Add neighbor
-				neighbor = (neighbor_pos, address)
-				neighbors.append(neighbor)
-				#window.writeln("Neighbor added.")
-
-			# Receiving ECHO message
-			elif(type == 2):
-				window.writeln("Message ECHO \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
-				receive_wave(peer, window, initiator, sequence)				
-				send_echo(peer, window, initiator, sequence)			
-			# Receiving ECHO REPLY message
-			elif(type == 3):
-				window.writeln("Message ECHO REPLY \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
-				
-		except error:
-			pass
-
+		# Check for receiving on peer
+		check_socket_recv(peer, window)
 
 		# Get commands input
 		command = window.getline()
