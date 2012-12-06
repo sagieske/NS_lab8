@@ -6,10 +6,8 @@ Outline of Program:
 	set up neighbours via Ping
 
 	while program is running (update)
-		check for messages received by multicast
-			-> Process Received Messages (multicast)
-		check for messages received by peer
-			-> Process Received Messages (peer)
+		check for messages received by sockets
+			-> Process Received Messages
 
 		check for commands
 			- Ping
@@ -21,12 +19,10 @@ Outline of Program:
 			- Echo
 				-> send initial wave with sequence 0 (SEND ECHO)
 
-- PROCESS RECEIVED MESSAGES (multicast)
-	If in range:
-		-> send PONG
-
-- PROCESS RECEIVED MESSAGES (peer)
-PONG:
+- PROCESS RECEIVED MESSAGES
+PING:
+	If message = PING
+		-> send Ping reply if within range	
 	If message = PONG
 		-> add neighbor
 
