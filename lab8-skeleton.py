@@ -13,6 +13,25 @@ from sensor import *
 from socket import *
 
 ########### Task 1 #############
+def setup_globals():
+	# Create global variable
+	# Global lists
+	global neighbors, reveived_reply
+	neighbors = []				# List of all known neighbors
+	received_reply = []			# List to keep track of received echo_reply
+
+	# Global counters
+	global reply_counter, sequenceNode
+	reply_counter = 0			# Counter for replies received from neighbors\
+	sequenceNode = 0
+
+	# Global misc
+	global unknown, sensorvalue, portnumber
+	sensorvalue = random.randint(0, 10000)
+	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message\
+	global last_wave	
+	last_wave = (-1,-1)			# Last wave received.  TODO: is this a list of all waves? Or just last wave?
+
 
 def send_ping(peer):
 	"""
@@ -97,20 +116,22 @@ def check_socket_recv(peer, window):
 		type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
 		
 		# Check type of message
-		if(type == 1):			# Receiving PONG message			
-			# Add neighbor
+		if(type == 1):			# Receiving PONG message
+			window.writeln("PONG")			
+			# Add neighbor if not already in list
 			neighbor = (neighbor_pos, address)
-			neighbors.append(neighbor)
+			if neighbor not in neighbors:
+				neighbors.append(neighbor)
 			
 		elif(type == 2): 	# Receiving ECHO message
-			window.writeln("Message ECHO \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
+			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))	
 			receive_wave(peer, window, message_dec_recv)				
 			send_echo(peer, window, initiator, sequence)			
-			#process_echo
+			#process_echo(peer, window, message, address)
 
 		elif(type == 3):		# Receiving ECHO REPLY message
-			window.writeln("Message ECHO REPLY \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
-			
+			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence))	
+			#process_echo_reply(peer, window, message, address)
 	except error:
 		pass
 
@@ -132,13 +153,8 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 		peer.sendto(pong_enc_sent, address)
 		window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
 
-	# Not known father or multiple neighbors, create new wave
+	# Multiple neighbors, create new wave
 	else:
-		# Increase seqnumber when not initial wave
-		if( father != (-1,-1)):
-			seqnumber += 1
-			window.writeln("NEW WAVE with " + str(seqnumber))
-
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
 
@@ -150,7 +166,6 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
-				#window.writeln("Send echo to port: " + str(address))
 
 		# Debug line
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
@@ -166,16 +181,11 @@ def receive_wave(peer, window, message_dec_recv):
 	"""
 
 	type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
-	# If ECHO from same wave already recieved, send ECHO_REPLY
-	# FIXME: how to check already_recieved?
-	if(len(received_waves) != 0):
-		for recv_echo in received_waves:
-			seq_echo, initiator_echo = recv_echo
-			# Echo has been received previously, send echo reply
-			if(sequence == seq_echo and initiator_echo == initiator):		
-				pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, (-1,-1), OP_NOOP, 0)
-				window.writeln("ECHO DUBBLE") 
-				break
+	# Echo has been received previously
+	
+	if((-1,1) == (sequence, initiator)):
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, neighbor_pos, OP_NOOP, 0)
+		window.writeln("ECHO DUBBLE") 	
 	"""
 	# Else if REPLY, count replies
 	elif(type == MSG_ECHO_REPLY):
@@ -187,7 +197,6 @@ def receive_wave(peer, window, message_dec_recv):
 			pong_enc_sent = message_encode(MSG_ECHO_REPLY, _, initiator, _, OP_NOOP, 0)
 	"""		
 	# Add wave to received
-	received_waves.append((sequence,initiator))		
 	window.writeln("TESTING - receive wave")
 
 # 2.5
@@ -196,47 +205,43 @@ When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to f
 """
 
 #TODO: WORK IN PROGRESS
-""" WORK IN PROGRES
 def process_echo(peer, window, message, address):
 
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 
-
-	# Only one neighbor
-	if(len(neighbor) == 1):
+	# Wave is previously received or only one neighbor
+	if( wave == last_wave or len(neighbor) == 1):
 		# Encode message
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+		# Send echo reply			
 		peer.sendto(echorep_enc_sent, address)
-		return
+	else:
+		# SEND ECHO TO NEIGHBORS.
+		pass
 
-	for i in received_waves:
-		# Wave already received previously or only one neighbor
-		if( i == wave or len(neighbor) == 1):
+
+def process_echo_reply(peer, window, message, address):
+	"""
+	Process an echo reply
+	"""	
+
+
+	type, sequence, initiator, neighbor_pos, operation, payload = message	
+	# Increment reply counter	
+	reply_counter += 1	
+	
+	# Reply from all neighbors
+	if(len(neighbor) == reply_counter):
+		# Node was initiator
+		if(initiator == node_location):
+			window.writeln("Decide!")
+		# Send echo reply to father		
+		else:
 			# Encode message
 			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
-			# Send echo reply			
+			# Send echo reply to father			
 			peer.sendto(echorep_enc_sent, address)
-			# Stop function
-			return
-	
-	# Function has not been stopped, so wave has not been previously received and neighbor length > 1.
-	# TODO: SEND ECHO FURTHER
-	If first time:
-		Add wave to received waves list
-			If Only One neighbor:
-				-> Send ECHO_REPLY
-			Else:		
-				-> Wave further ?with sequence +1? (SEND ECHO)
-		If second time:
-				-> Send ECHO_REPLY
-"""
-		
-
-
-
-		
-
 
 # 2.6
 """
@@ -281,19 +286,17 @@ def main(argv):
 	window = MainWindow()
 
 #---------- BEGIN EIGEN CODE ------------#
-	# Create global variable
-	global neighbors, sensorvalue, portnumber
-	global received_waves, received_reply, reply_counter
-	global unknown
-	neighbors = []
-	sensorvalue = random.randint(0, 10000)
-	received_waves = []			# List to keep track of received waves
-	received_reply = []			# List to keep track of received echo_reply
-	reply_counter = 0			# Counter for replies received from neighbors
-	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message
+	
+	# Set up most of the globals
+	setup_globals()
 
+	global portnumber
 	# Get socket information
 	_, portnumber = peer.getsockname()
+	
+	global a, b
+	a = 1
+	b = 2
 
 	# Set blocking to zero
 	peer.setblocking(0)
@@ -340,11 +343,14 @@ def main(argv):
 			window.writeln("> Command entered: " + command)
 			new_location = move()
 			window.writeln("New location:" + str(new_location))
+
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			send_echo(peer, window)
+
 		elif (command == ""):
 			pass
+
 		else:
 			window.writeln("The command \'" + str(command) + "\' is unknown.")
 
