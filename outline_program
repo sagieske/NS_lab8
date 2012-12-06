@@ -1,0 +1,45 @@
+Outline of Program:
+
+- Main:
+	set up all global variables
+	set up sockets
+	set up neighbours via Ping
+
+	while program is running (update)
+		check for messages received by sockets
+			-> Process Received Messages
+
+		check for commands
+			- Ping
+				-> send a multicast ping message
+			- List
+				-> Lists  all known neighbors (those who responded to the ping), with (x,y)	positon	and	IP:port	address 
+			- Move
+				-> Moves the node by choosing a new position randomly. 
+			- Echo
+				-> send initial wave with sequence 0 (SEND ECHO)
+
+- Process Received Messages
+PING:
+	If message = PING
+		-> send Ping reply if within range	
+	If message = PONG
+		-> add neighbor
+
+ECHO:
+	If message = ECHO
+		If first time:
+			If Only One neighbor:
+				-> Send ECHO_REPLY
+			Else:		
+				-> Wave further ?with sequence +1? (SEND ECHO)
+		If second time:
+				-> Send ECHO_REPLY
+	If message = ECHO REPLY
+			Increment received echo counter
+			If received echo count is same as nr of neigbors:
+				If node is initiator:	
+					Deccide Event
+				Else:
+					ECHO REPLY to father
+				

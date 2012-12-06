@@ -108,14 +108,14 @@ def receive_wave(peer, window, initiator, sequence):
 	"""
 	# If ECHO from same wave already recieved, send ECHO_REPLY
 	# FIXME: how to check already_recieved?
-
-	for recv_echo in received_echos:
-		seq_echo, initiator_echo = recv_echo
-		# Echo has been received previously, send echo reply
-		if(sequence == seq_echo and initiator_echo == initiator):		
-			pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, (-1,-1), OP_NOOP, 0)
-			window.writeln("ECHO DUBBLE") 
-			break
+	if(len(received_echos) != 0):
+		for recv_echo in received_echos:
+			seq_echo, initiator_echo = recv_echo
+			# Echo has been received previously, send echo reply
+			if(sequence == seq_echo and initiator_echo == initiator):		
+				pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, (-1,-1), OP_NOOP, 0)
+				window.writeln("ECHO DUBBLE") 
+				break
 	"""
 	# Else if REPLY, count replies
 	elif(type == MSG_ECHO_REPLY):
