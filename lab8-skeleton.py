@@ -101,13 +101,13 @@ def check_socket_recv(peer, window):
 			# Add neighbor
 			neighbor = (neighbor_pos, address)
 			neighbors.append(neighbor)
-			#window.writeln("Neighbor added.")
 			
 		elif(type == 2): 	# Receiving ECHO message
 			window.writeln("Message ECHO \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
-			receive_wave(peer, window, initiator, sequence)				
+			receive_wave(peer, window, message_dec_recv)				
 			send_echo(peer, window, initiator, sequence)			
-			
+			#process_echo
+
 		elif(type == 3):		# Receiving ECHO REPLY message
 			window.writeln("Message ECHO REPLY \'" + str(type) + "\' received from: " + str(initiator) + "\tSequence: " + str(sequence))	
 			
@@ -160,18 +160,16 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 """
 When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
 """
-def receive_wave(peer, window, initiator, sequence):
+def receive_wave(peer, window, message_dec_recv):
 	"""
-	# Message
-	#pong_enc_recv, address_mcast = mcast.recvfrom(10240)
-	# Decode message
-	wave = message_decode(pong_enc_recv)
-	type, sequence, initiator, neighbor, _, _ = wave
+
 	"""
+
+	type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
 	# If ECHO from same wave already recieved, send ECHO_REPLY
 	# FIXME: how to check already_recieved?
-	if(len(received_echos) != 0):
-		for recv_echo in received_echos:
+	if(len(received_waves) != 0):
+		for recv_echo in received_waves:
 			seq_echo, initiator_echo = recv_echo
 			# Echo has been received previously, send echo reply
 			if(sequence == seq_echo and initiator_echo == initiator):		
@@ -189,13 +187,53 @@ def receive_wave(peer, window, initiator, sequence):
 			pong_enc_sent = message_encode(MSG_ECHO_REPLY, _, initiator, _, OP_NOOP, 0)
 	"""		
 	# Add wave to received
-	received_echos.append((sequence,initiator))		
+	received_waves.append((sequence,initiator))		
 	window.writeln("TESTING - receive wave")
 
 # 2.5
 """
 When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to father.
 """
+
+#TODO: WORK IN PROGRESS
+""" WORK IN PROGRES
+def process_echo(peer, window, message, address):
+
+	type, sequence, initiator, neighbor_pos, operation, payload = message
+	wave = (sequence, initiator)
+
+
+	# Only one neighbor
+	if(len(neighbor) == 1):
+		# Encode message
+		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+		peer.sendto(echorep_enc_sent, address)
+		return
+
+	for i in received_waves:
+		# Wave already received previously or only one neighbor
+		if( i == wave or len(neighbor) == 1):
+			# Encode message
+			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+			# Send echo reply			
+			peer.sendto(echorep_enc_sent, address)
+			# Stop function
+			return
+	
+	# Function has not been stopped, so wave has not been previously received and neighbor length > 1.
+	# TODO: SEND ECHO FURTHER
+	If first time:
+		Add wave to received waves list
+			If Only One neighbor:
+				-> Send ECHO_REPLY
+			Else:		
+				-> Wave further ?with sequence +1? (SEND ECHO)
+		If second time:
+				-> Send ECHO_REPLY
+"""
+		
+
+
 
 		
 
@@ -245,10 +283,11 @@ def main(argv):
 #---------- BEGIN EIGEN CODE ------------#
 	# Create global variable
 	global neighbors, sensorvalue, portnumber
-	global received_echos, reply_counter
+	global received_waves, received_reply, reply_counter
 	neighbors = []
 	sensorvalue = random.randint(0, 10000)
-	received_echos = []			# List to keep track of received echo
+	received_waves = []			# List to keep track of received waves
+	received_reply = []			# List to keep track of received echo_reply
 	reply_counter = 0			# Counter for replies received from neighbors
 
 	# Get socket information

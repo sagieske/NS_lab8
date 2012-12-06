@@ -6,6 +6,8 @@ Outline of Program:
 	set up neighbours via Ping
 
 	while program is running (update)
+		keep resending ping messages in window of 5 seconds
+			-> Ping		
 		check for messages received by multicast
 			-> Process Received Messages (multicast)
 		check for messages received by peer
@@ -46,4 +48,5 @@ ECHO:
 					Deccide Event
 				Else:
 					ECHO REPLY to father
-				
+
+

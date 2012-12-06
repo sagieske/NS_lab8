@@ -35,6 +35,7 @@ PONG:
 ECHO:
 	If message = ECHO
 		If first time:
+			Add wave to received waves list
 			If Only One neighbor:
 				-> Send ECHO_REPLY
 			Else:		
@@ -42,8 +43,8 @@ ECHO:
 		If second time:
 				-> Send ECHO_REPLY
 	If message = ECHO REPLY
-			Increment received echo counter
-			If received echo count is same as nr of neigbors:
+			Increment received echo reply counter
+			If received echo reply count is same as nr of neigbors:
 				If node is initiator:	
 					Deccide Event
 				Else:
