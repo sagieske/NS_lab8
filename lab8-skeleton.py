@@ -284,11 +284,13 @@ def main(argv):
 	# Create global variable
 	global neighbors, sensorvalue, portnumber
 	global received_waves, received_reply, reply_counter
+	global unknown
 	neighbors = []
 	sensorvalue = random.randint(0, 10000)
 	received_waves = []			# List to keep track of received waves
 	received_reply = []			# List to keep track of received echo_reply
 	reply_counter = 0			# Counter for replies received from neighbors
+	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message
 
 	# Get socket information
 	_, portnumber = peer.getsockname()
