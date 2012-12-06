@@ -73,69 +73,6 @@ def list(window):
 		index += 1
 
 
-def check_multicast(mcast, peer):
-	"""
-	Check for receiving ping messages on multicast listener socket
-	"""
-	try:
-		ping_enc_recv, address_mcast = mcast.recvfrom(10240)
-		ip_ping, port_ping = address_mcast
-		
-		# Decode message
-		ping_dec_recv = message_decode(ping_enc_recv)
-		type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
-		ix, iy = initiator
-		
-		#calculate range with pythagoras
-		distance = math.pow(abs(ny-iy), 2) + math.pow(abs(nx-ix),2)
-
-		# Ping is sent by same node		
-		if(port_ping == portnumber):
-			pass	
-		# Initiator is not in same range
-		elif( distance > math.pow(SENSOR_RANGE,2)):
-			pass
-		# Initiator is in same range
-		else:
-			send_pong(peer, initiator, address_mcast)
-
-	except error:
-		pass
-	
-def check_socket_recv(peer, window):
-	"""
-	Check for receiving pong/echo/echo_reply messages
-	"""
-
-	# Check for receiving messages on peer socket
-	try:
-		message_enc_recv, address = peer.recvfrom(10240)
-
-		# Decode message
-		message_dec_recv = message_decode(message_enc_recv)
-		type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
-		
-		# Check type of message
-		if(type == 1):			# Receiving PONG message
-			window.writeln("PONG")			
-			# Add neighbor if not already in list
-			neighbor = (neighbor_pos, address)
-			if neighbor not in neighbors:
-				neighbors.append(neighbor)
-			
-		elif(type == 2): 	# Receiving ECHO message
-			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))	
-			receive_wave(peer, window, message_dec_recv)				
-			send_echo(peer, window, initiator, sequence)			
-			#process_echo(peer, window, message, address)
-
-		elif(type == 3):		# Receiving ECHO REPLY message
-			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence))	
-			#process_echo_reply(peer, window, message, address)
-	except error:
-		pass
-
-
 ########### Task 2 #############
 
 # FOR FIRST ECHO (Task 2.1)
@@ -250,6 +187,69 @@ When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
 
 
 
+
+
+def check_multicast(mcast, peer):
+	"""
+	Check for receiving ping messages on multicast listener socket
+	"""
+	try:
+		ping_enc_recv, address_mcast = mcast.recvfrom(10240)
+		ip_ping, port_ping = address_mcast
+		
+		# Decode message
+		ping_dec_recv = message_decode(ping_enc_recv)
+		type, _, initiator, _, _, _ = ping_dec_recv	# only PING can be sent on mcast
+		ix, iy = initiator
+		
+		#calculate range with pythagoras
+		distance = math.pow(abs(ny-iy), 2) + math.pow(abs(nx-ix),2)
+
+		# Ping is sent by same node		
+		if(port_ping == portnumber):
+			pass	
+		# Initiator is not in same range
+		elif( distance > math.pow(SENSOR_RANGE,2)):
+			pass
+		# Initiator is in same range
+		else:
+			send_pong(peer, initiator, address_mcast)
+
+	except error:
+		pass
+	
+def check_socket_recv(peer, window):
+	"""
+	Check for receiving pong/echo/echo_reply messages
+	"""
+
+	# Check for receiving messages on peer socket
+	try:
+		message_enc_recv, address = peer.recvfrom(10240)
+
+		# Decode message
+		message_dec_recv = message_decode(message_enc_recv)
+		type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
+		
+		# Check type of message
+		if(type == 1):			# Receiving PONG message
+			window.writeln("PONG")			
+			# Add neighbor if not already in list
+			neighbor = (neighbor_pos, address)
+			if neighbor not in neighbors:
+				neighbors.append(neighbor)
+			
+		elif(type == 2): 	# Receiving ECHO message
+			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))	
+			receive_wave(peer, window, message_dec_recv)				
+			send_echo(peer, window, initiator, sequence)			
+			#process_echo(peer, window, message, address)
+
+		elif(type == 3):		# Receiving ECHO REPLY message
+			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence))	
+			#process_echo_reply(peer, window, message, address)
+	except error:
+		pass
 
 def socket_subscribe_mcast(sock, ip):
 	"""

@@ -73,6 +73,122 @@ def list(window):
 		index += 1
 
 
+########### Task 2 #############
+
+# FOR FIRST ECHO (Task 2.1)
+def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
+	"""
+	Send echo to all neighbors
+	"""
+
+	# Only 1 neighbor and already known father, send echo reply
+	if(len(neighbors) == 1 and father != (-1,-1)):
+		# Get address for ECHO Reply
+		location, address = neighbors[0]
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_NOOP)
+		peer.sendto(pong_enc_sent, address)
+		window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
+
+	# Multiple neighbors, create new wave
+	else:
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
+
+		# Sent to all neighbors
+		for i in neighbors:
+			location, address = i
+			# If known father, do not send back to father
+			if(father == location):
+				pass
+			else:
+				peer.sendto(pong_enc_sent, address)
+
+		# Debug line
+		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
+
+
+# 2.4
+"""
+When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
+"""
+def receive_wave(peer, window, message_dec_recv):
+	"""
+
+	"""
+
+	type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
+	# Echo has been received previously
+	
+	if((-1,1) == (sequence, initiator)):
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, neighbor_pos, OP_NOOP, 0)
+		window.writeln("ECHO DUBBLE") 	
+	"""
+	# Else if REPLY, count replies
+	elif(type == MSG_ECHO_REPLY):
+		for i in neighbors:
+			location, address = i
+			if(location == neighbor):
+				reply_counter += 1
+		if(reply_counter == neighbors):
+			pong_enc_sent = message_encode(MSG_ECHO_REPLY, _, initiator, _, OP_NOOP, 0)
+	"""		
+	# Add wave to received
+	window.writeln("TESTING - receive wave")
+
+# 2.5
+"""
+When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to father.
+"""
+
+#TODO: WORK IN PROGRESS
+def process_echo(peer, window, message, address):
+
+	type, sequence, initiator, neighbor_pos, operation, payload = message
+	wave = (sequence, initiator)
+
+	# Wave is previously received or only one neighbor
+	if( wave == last_wave or len(neighbor) == 1):
+		# Encode message
+		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+		# Send echo reply			
+		peer.sendto(echorep_enc_sent, address)
+	else:
+		# SEND ECHO TO NEIGHBORS.
+		pass
+
+
+def process_echo_reply(peer, window, message, address):
+	"""
+	Process an echo reply
+	"""	
+
+
+	type, sequence, initiator, neighbor_pos, operation, payload = message	
+	# Increment reply counter	
+	reply_counter += 1	
+	
+	# Reply from all neighbors
+	if(len(neighbor) == reply_counter):
+		# Node was initiator
+		if(initiator == node_location):
+			window.writeln("Decide!")
+		# Send echo reply to father		
+		else:
+			# Encode message
+			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+			# Send echo reply to father			
+			peer.sendto(echorep_enc_sent, address)
+
+# 2.6
+"""
+When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
+"""
+
+
+
+
+
 def check_multicast(mcast, peer):
 	"""
 	Check for receiving ping messages on multicast listener socket
@@ -134,124 +250,6 @@ def check_socket_recv(peer, window):
 			#process_echo_reply(peer, window, message, address)
 	except error:
 		pass
-
-
-########### Task 2 #############
-
-# FOR FIRST ECHO (Task 2.1)
-def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
-	"""
-	Send echo to all neighbors
-	"""
-
-	# Only 1 neighbor and already known father, send echo reply
-	if(len(neighbors) == 1 and father != (-1,-1)):
-		# Get address for ECHO Reply
-		location, address = neighbors[0]
-		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_NOOP)
-		peer.sendto(pong_enc_sent, address)
-		window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
-
-	# Multiple neighbors, create new wave
-	else:
-		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
-
-		# Sent to all neighbors
-		for i in neighbors:
-			location, address = i
-			# If known father, do not send back to father
-			if(father == location):
-				pass
-			else:
-				peer.sendto(pong_enc_sent, address)
-
-		# Debug line
-		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
-
-
-# 2.4
-"""
-When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
-"""
-def receive_wave(peer, window, message_dec_recv):
-	"""
-
-	"""
-	print str(a) + str(b)
-	type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
-	# Echo has been received previously
-	
-	if((-1,1) == (sequence, initiator)):
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, neighbor_pos, OP_NOOP, 0)
-		window.writeln("ECHO DUBBLE") 	
-	"""
-	# Else if REPLY, count replies
-	elif(type == MSG_ECHO_REPLY):
-		for i in neighbors:
-			location, address = i
-			if(location == neighbor):
-				reply_counter += 1
-		if(reply_counter == neighbors):
-			pong_enc_sent = message_encode(MSG_ECHO_REPLY, _, initiator, _, OP_NOOP, 0)
-	"""		
-	# Add wave to received
-	a = sequence
-	b = initiator	
-	window.writeln("TESTING - receive wave")
-
-# 2.5
-"""
-When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to father.
-"""
-
-#TODO: WORK IN PROGRESS
-def process_echo(peer, window, message, address):
-
-	type, sequence, initiator, neighbor_pos, operation, payload = message
-	wave = (sequence, initiator)
-
-	# Wave is previously received or only one neighbor
-	if( wave == last_wave or len(neighbor) == 1):
-		# Encode message
-		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
-		# Send echo reply			
-		peer.sendto(echorep_enc_sent, address)
-	else:
-		# SEND ECHO TO NEIGHBORS.
-		pass
-
-
-def process_echo_reply(peer, window, message, address):
-	"""
-	Process an echo reply
-	"""	
-
-
-	type, sequence, initiator, neighbor_pos, operation, payload = message	
-	# Increment reply counter	
-	reply_counter += 1	
-	
-	# Reply from all neighbors
-	if(len(neighbor) == reply_counter):
-		# Node was initiator
-		if(initiator == node_location):
-			window.writeln("Decide!")
-		# Send echo reply to father		
-		else:
-			# Encode message
-			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
-			# Send echo reply to father			
-			peer.sendto(echorep_enc_sent, address)
-
-# 2.6
-"""
-When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
-"""
-
-
-
 
 def socket_subscribe_mcast(sock, ip):
 	"""
@@ -322,7 +320,7 @@ def main(argv):
 			neighbors = []
 			send_ping(peer)
 			pingtime = time.time()
-			#window.writeln("------------------ reset ---------------------")
+			window.writeln("------------------ reset ---------------------")
 		
 		# Check for receiving on multicast	
 		check_multicast(mcast,peer)
