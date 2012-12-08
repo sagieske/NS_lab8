@@ -20,3 +20,9 @@ SyntaxWarning: name 'reply_counter' is assigned to before global declaration
 
 
 Moeten we ook het geval fixen dat de nodes in een 'rondje' geconnected zijn?!
+
+TODO:
+echo reply fixen
+wave list fixen
+
+task 3 en 4

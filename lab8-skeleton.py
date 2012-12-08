@@ -29,7 +29,7 @@ def setup_globals():
 	# Global misc
 	global unknown, sensorvalue, portnumber
 	sensorvalue = random.randint(0, 10000)
-	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message\
+	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message
 	global last_wave	
 	last_wave = (-1,-1)			# Last wave received.  TODO: is this a list of all waves? Or just last wave?
 
@@ -136,6 +136,7 @@ def process_echo(peer, window, message, address):
 def process_echo(peer, window, message, address):
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
+	print 'Wave1: ', wave
 	
 	# If already received or only 1 neighbor
 	if((wave in last_wave) or len(neighbors) == 1):
@@ -164,6 +165,7 @@ def process_echo(peer, window, message, address):
 
 		# Debug line
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(sequence))	
+		window.writeln("Wave2: " + str(wave))
 	else:
 		print "Something went wrong..."
 		
