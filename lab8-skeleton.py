@@ -16,7 +16,7 @@ from socket import *
 def setup_globals():
 	# Create global variable
 	# Global lists
-	global neighbors, reveived_reply
+	global neighbors, received_reply
 	neighbors = []				# List of all known neighbors 
 	received_reply = []			# List to keep track of received echo_reply
 
@@ -83,6 +83,7 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 	"""
 
 	# Only 1 neighbor and already known father, send echo reply
+	# TODO: add wave to received to last_wave
 	if(len(neighbors) == 1 and father != (-1,-1)):
 		# Get address for ECHO Reply
 		location, address = neighbors[0]
@@ -94,7 +95,7 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 	# Multiple neighbors, send new wave
 	else:
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
+		pong_enc_sent = message_encode(MSG_ECHO,  new_sequence, node_location, (-1,-1), OP_NOOP)
 
 		# Sent to all neighbors
 		for i in neighbors:
@@ -114,15 +115,11 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
 
 def receive_wave(peer, window, message_dec_recv):
-
-
 	type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
 	# Echo has been received previously
-	
 	if((-1,1) == (sequence, initiator)):
 		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, neighbor_pos, OP_NOOP, 0)
-		window.writeln("ECHO DUBBLE") 	
-	
+		window.writeln("ECHO DUBBLE") 		
 	# Add wave to received
 	window.writeln("TESTING - receive wave")
 """
@@ -159,7 +156,6 @@ def process_echo_reply(peer, window, message, address):
 
 #TODO: WORK IN PROGRESS
 def process_echo(peer, window, message, address):
-	print 'poep'
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 
@@ -176,12 +172,31 @@ def process_echo(peer, window, message, address):
 		# SEND ECHO TO NEIGHBORS.
 		pass
 
-
-# 2.6
 """
-When initiator received ECHO_REPLY from all neighbours, terminate algorithm.
+process echo:
+	IF only one neighbour OR already received wave:
+		send ECHO_REPLY
+	ELIF more neighbors:
+		send ECHO with sequence+1
 """
 
+def process_echo_retry(peer, window, message, address):
+	type, sequence, initiator, neighbor_pos, opreation, payload = massage
+	wave = (sequence, initiator)
+	
+	# If already received or only 1 neigbor
+	if((wave in last_wave) or len(neighbors) == 1):
+		if((wave in last_wave):
+			window.writeln("Double wave")
+		else:
+			window.writeln("Only 1 neighbor")
+		# Encode message
+		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+		# Send echo reply to sender		
+		peer.sendto(echorep_enc_sent, address)
+	elif(len(neighbors > 1)):
+		# send echo to neighbors
+		# with send_echo???
 
 
 

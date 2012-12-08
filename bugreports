@@ -6,6 +6,8 @@ BUGS:
 
 3: Sequence wordt niet opgehoogd
 
+4: In het geval van connectie zoals: 1--2--3 wordt de reply niet doorgestuurd door 2
+
 
 
 
