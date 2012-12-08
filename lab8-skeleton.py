@@ -17,7 +17,7 @@ def setup_globals():
 	# Create global variable
 	# Global lists
 	global neighbors, reveived_reply
-	neighbors = []				# List of all known neighbors
+	neighbors = []				# List of all known neighbors ---!!!BUG: when a node is moved, it stays in list!!!---
 	received_reply = []			# List to keep track of received echo_reply
 
 	# Global counters
@@ -50,6 +50,7 @@ def send_pong(peer, initiator, address):
 	pong_location = node_location
 	pong_enc_sent = message_encode(MSG_PONG, 0, initiator, pong_location)
 	peer.sendto(pong_enc_sent, address)
+
 
 def move():
 	"""
