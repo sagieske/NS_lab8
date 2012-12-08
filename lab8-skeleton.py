@@ -94,8 +94,9 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 
 	# Multiple neighbors, send new wave
 	else:
+		#new_sequence = seqnumber + 1
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  new_sequence, node_location, (-1,-1), OP_NOOP)
+		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
 
 		# Sent to all neighbors
 		for i in neighbors:
@@ -153,7 +154,7 @@ def process_echo_reply(peer, window, message, address):
 			# Send echo reply to father			
 			peer.sendto(echorep_enc_sent, address)
 
-
+"""
 #TODO: WORK IN PROGRESS
 def process_echo(peer, window, message, address):
 	type, sequence, initiator, neighbor_pos, operation, payload = message
@@ -171,6 +172,7 @@ def process_echo(peer, window, message, address):
 		peer.sendto(echorep_enc_sent, address)
 		# SEND ECHO TO NEIGHBORS.
 		pass
+"""
 
 """
 process echo:
@@ -181,12 +183,12 @@ process echo:
 """
 
 def process_echo_retry(peer, window, message, address):
-	type, sequence, initiator, neighbor_pos, opreation, payload = massage
+	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 	
 	# If already received or only 1 neigbor
 	if((wave in last_wave) or len(neighbors) == 1):
-		if((wave in last_wave):
+		if((wave in last_wave)):
 			window.writeln("Double wave")
 		else:
 			window.writeln("Only 1 neighbor")
@@ -194,10 +196,24 @@ def process_echo_retry(peer, window, message, address):
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to sender		
 		peer.sendto(echorep_enc_sent, address)
-	elif(len(neighbors > 1)):
-		# send echo to neighbors
-		# with send_echo???
+	elif(len(neighbors) > 1):
+		sequence = sequence + 1
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO,  sequence, node_location, (-1,-1), OP_NOOP)
 
+		# Send to all neighbors
+		for i in neighbors:
+			location, address = i
+			# If known father, do not send back to father
+			if(initiator == location):
+				pass
+			else:
+				peer.sendto(pong_enc_sent, address)
+
+		# Debug line
+		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(sequence))	
+	else:
+		print "Something went wrong..."
 
 
 
@@ -254,8 +270,8 @@ def check_socket_recv(peer, window):
 		elif(type == 2): 	# Receiving ECHO message
 			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))	
 			#receive_wave(peer, window, message_dec_recv)				
-			send_echo(peer, window, initiator, sequence)			
-			process_echo(peer, window, message_dec_recv, address)
+			#send_echo(peer, window, initiator, sequence)			
+			process_echo_retry(peer, window, message_dec_recv, address)
 
 		elif(type == 3):		# Receiving ECHO REPLY message
 			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence))	

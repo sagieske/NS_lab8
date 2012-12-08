@@ -4,7 +4,7 @@ BUGS:
 
 2: Er wordt twee keer ge-decided
 
-3: Sequence wordt niet opgehoogd
+3: FIXED: Sequence wordt niet opgehoogd
 
 4: In het geval van connectie zoals: 1--2--3 wordt de reply niet doorgestuurd door 2
 
