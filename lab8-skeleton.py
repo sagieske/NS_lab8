@@ -313,7 +313,7 @@ def main(argv):
 	while window.update():
 		# Resend PING if time > 5s, reset
 		if(time.time() - PING_PERIOD > pingtime):
-			neighbors = []
+			del neighbors[:] # Empty neighbors list
 			send_ping(peer)
 			pingtime = time.time()
 			#window.writeln("------------------ reset ---------------------")
