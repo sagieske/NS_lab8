@@ -12,7 +12,7 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
-reply_counter_re = 0
+reply_counter = 0 # Counter for replies received from neighbors
 
 ########### Task 1 #############
 def setup_globals():
@@ -23,8 +23,7 @@ def setup_globals():
 	received_reply = []			# List to keep track of received echo_reply
 
 	# Global counters
-	global reply_counter, sequenceNode
-	reply_counter = 0			# Counter for replies received from neighbors\
+	global sequenceNode
 	sequenceNode = 0
 
 	# Global misc
@@ -171,28 +170,37 @@ def process_echo(peer, window, message, address):
 	
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
-	global reply_counter_re
-	print "1: ", reply_counter_re
+	global reply_counter
+	print "1: ", reply_counter
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 	# Increment reply counter	
-	reply_counter_re += 1
-	print "2: ", reply_counter_re
-	
+	reply_counter += 1
+	print "2: ", reply_counter
+
 	# Reply from all neighbors
 	if(len(neighbors) == reply_counter):
-		#global reply_counter
-		#reply_counter = 0
+		print 'Neighbors: ', len(neighbors)
 		# Node was initiator
 		if(initiator == node_location):
 			window.writeln("Decide!")
+			decide()
 		# Send echo reply to father		
-		else:
+		elif(initiator != node_location):
 			# Encode message
+			print "blabla"
 			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 			# Send echo reply to father			
 			peer.sendto(echorep_enc_sent, address)
+	# FIXME: waarom werkt dit niet???
+	elif(len(neighbors) == reply_counter - 1):
+		print "poep"
+		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+		# Send echo reply to father			
+		peer.sendto(echorep_enc_sent, address)
+	
 
-
+def decide():
+	print 'DECIDE, to bo implemented'
 
 
 def check_multicast(mcast, peer):
