@@ -1,3 +1,6 @@
 BUGS:
 
-1: 
+1: Als een node wordt ge-moved blijft de oude positie in de neighbors list, resulterend in een infinite loop als er een echo wordt verzonden
+
+2: Soms worden er tegelijk twee PONGs gestuurd door een node
+
