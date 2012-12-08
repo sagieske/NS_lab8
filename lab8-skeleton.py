@@ -17,7 +17,7 @@ def setup_globals():
 	# Create global variable
 	# Global lists
 	global neighbors, reveived_reply
-	neighbors = []				# List of all known neighbors ---!!!BUG: when a node is moved, it stays in list!!!---
+	neighbors = []				# List of all known neighbors 
 	received_reply = []			# List to keep track of received echo_reply
 
 	# Global counters
@@ -135,16 +135,17 @@ def process_echo_reply(peer, window, message, address):
 	"""
 	Process an echo reply
 	"""	
-
-
+	reply_counter = 0
+	print "1: ",reply_counter
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 	# Increment reply counter	
 	reply_counter += 1
+	print "2: ", reply_counter
 	
 	# Reply from all neighbors
 	if(len(neighbors) == reply_counter):
-		global reply_counter
-		reply_counter = 0
+		#global reply_counter
+		#reply_counter = 0
 		# Node was initiator
 		if(initiator == node_location):
 			window.writeln("Decide!")
@@ -158,7 +159,7 @@ def process_echo_reply(peer, window, message, address):
 
 #TODO: WORK IN PROGRESS
 def process_echo(peer, window, message, address):
-
+	print 'poep'
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 
