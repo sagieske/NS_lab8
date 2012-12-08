@@ -12,6 +12,8 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
+reply_counter_re = 0
+
 ########### Task 1 #############
 def setup_globals():
 	# Create global variable
@@ -111,49 +113,6 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
 
 
-# 2.4
-"""
-When a non-initiator receives an ECHO from the same wave again, send an ECHO_REPLY to sender.
-
-def receive_wave(peer, window, message_dec_recv):
-	type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
-	# Echo has been received previously
-	if((-1,1) == (sequence, initiator)):
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY, sequence, initiator, neighbor_pos, OP_NOOP, 0)
-		window.writeln("ECHO DUBBLE") 		
-	# Add wave to received
-	window.writeln("TESTING - receive wave")
-"""
-# 2.5
-"""
-When non-initiator recieved ECHO_REPLY from all neighbours, send ECHO_REPLY to father.
-"""
-
-def process_echo_reply(peer, window, message, address):
-	"""
-	Process an echo reply
-	"""	
-	reply_counter = 0
-	print "1: ",reply_counter
-	type, sequence, initiator, neighbor_pos, operation, payload = message	
-	# Increment reply counter	
-	reply_counter += 1
-	print "2: ", reply_counter
-	
-	# Reply from all neighbors
-	if(len(neighbors) == reply_counter):
-		#global reply_counter
-		#reply_counter = 0
-		# Node was initiator
-		if(initiator == node_location):
-			window.writeln("Decide!")
-		# Send echo reply to father		
-		else:
-			# Encode message
-			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
-			# Send echo reply to father			
-			peer.sendto(echorep_enc_sent, address)
-
 """
 #TODO: WORK IN PROGRESS
 def process_echo(peer, window, message, address):
@@ -174,19 +133,12 @@ def process_echo(peer, window, message, address):
 		pass
 """
 
-"""
-process echo:
-	IF only one neighbour OR already received wave:
-		send ECHO_REPLY
-	ELIF more neighbors:
-		send ECHO with sequence+1
-"""
-
-def process_echo_retry(peer, window, message, address):
+# Process ECHO message
+def process_echo(peer, window, message, address):
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 	
-	# If already received or only 1 neigbor
+	# If already received or only 1 neighbor
 	if((wave in last_wave) or len(neighbors) == 1):
 		if((wave in last_wave)):
 			window.writeln("Double wave")
@@ -196,6 +148,7 @@ def process_echo_retry(peer, window, message, address):
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to sender		
 		peer.sendto(echorep_enc_sent, address)
+	# If more neighbors, send echo to them all
 	elif(len(neighbors) > 1):
 		sequence = sequence + 1
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
@@ -214,6 +167,31 @@ def process_echo_retry(peer, window, message, address):
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(sequence))	
 	else:
 		print "Something went wrong..."
+		
+	
+# Process ECHO_REPLY message	
+def process_echo_reply(peer, window, message, address):
+	global reply_counter_re
+	print "1: ", reply_counter_re
+	type, sequence, initiator, neighbor_pos, operation, payload = message	
+	# Increment reply counter	
+	reply_counter_re += 1
+	print "2: ", reply_counter_re
+	
+	# Reply from all neighbors
+	if(len(neighbors) == reply_counter):
+		#global reply_counter
+		#reply_counter = 0
+		# Node was initiator
+		if(initiator == node_location):
+			window.writeln("Decide!")
+		# Send echo reply to father		
+		else:
+			# Encode message
+			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+			# Send echo reply to father			
+			peer.sendto(echorep_enc_sent, address)
+
 
 
 
@@ -271,7 +249,7 @@ def check_socket_recv(peer, window):
 			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))	
 			#receive_wave(peer, window, message_dec_recv)				
 			#send_echo(peer, window, initiator, sequence)			
-			process_echo_retry(peer, window, message_dec_recv, address)
+			process_echo(peer, window, message_dec_recv, address)
 
 		elif(type == 3):		# Receiving ECHO REPLY message
 			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence))	
