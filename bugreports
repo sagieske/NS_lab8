@@ -11,14 +11,6 @@ BUGS:
 
 
 
-
-
-SYNTAX REPORT:
-SyntaxWarning: name 'reply_counter' is assigned to before global declaration
-  global reply_counter
-- reply_counter wordt 2 keer als global gedeclareerd, why?
-
-
 Moeten we ook het geval fixen dat de nodes in een 'rondje' geconnected zijn?!
 
 TODO:

@@ -95,7 +95,6 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 
 	# Multiple neighbors, send new wave
 	else:
-		#new_sequence = seqnumber + 1
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
 
@@ -202,6 +201,7 @@ def process_echo_reply(peer, window, message, address):
 	
 
 def decide():
+	# Algorithm should terminate
 	print 'DECIDE, to bo implemented'
 
 
@@ -266,6 +266,31 @@ def check_socket_recv(peer, window):
 			process_echo_reply(peer, window, message_dec_recv, address)
 	except error:
 		pass
+		
+		
+########## TASK 3 ##########
+
+def send_echo_size(peer, window, father):
+	if(len(neighbors) == 1 and father != (-1,-1)):
+		# Get address for ECHO Reply
+		location, address = neighbors[0]
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_SIZE, 1)
+		peer.sendto(pong_enc_sent, address)	
+
+	# Multiple neighbors, send new wave
+	else:
+		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
+		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_SIZE, 1)
+
+		# Sent to all neighbors
+		for i in neighbors:
+			location, address = i
+			# If known father, do not send back to father
+			if(father == location):
+				pass
+			else:
+				peer.sendto(pong_enc_sent, address)
 
 def socket_subscribe_mcast(sock, ip):
 	"""
