@@ -197,7 +197,7 @@ def process_echo_reply(peer, window, message, address):
 		print "poep"
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to father			
-		peer.sendto(echorep_enc_sent, initiator)
+		peer.sendto(echorep_enc_sent, address)
 	
 # Echo wave stops and counter is reset
 def decide():
@@ -277,7 +277,6 @@ def send_echo_size(peer, window, father):
 		pong_enc_sent = message_encode(MSG_ECHO_REPLY, father, (-1,-1), OP_SIZE, 1)
 		peer.sendto(pong_enc_sent, address)	
 
-	# Multiple neighbors, send new wave
 	else:
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO, node_location, (-1,-1), OP_SIZE, 1)
