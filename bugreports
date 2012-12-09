@@ -2,7 +2,7 @@ BUGS:
 
 1: FIXED: Als een node wordt ge-moved blijft de oude positie in de neighbors list, resulterend in een infinite loop als er een echo wordt verzonden
 
-2: Er wordt twee keer ge-decided
+2: FIXED: Er wordt twee keer ge-decided
 
 3: FIXED: Sequence wordt niet opgehoogd
 

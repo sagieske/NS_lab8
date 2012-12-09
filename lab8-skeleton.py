@@ -89,14 +89,14 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 		# Get address for ECHO Reply
 		location, address = neighbors[0]
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_NOOP)
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_NOOP, 0)
 		peer.sendto(pong_enc_sent, address)
 		window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
 
 	# Multiple neighbors, send new wave
 	else:
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP)
+		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP, 0)
 
 		# Sent to all neighbors
 		for i in neighbors:
@@ -151,7 +151,7 @@ def process_echo(peer, window, message, address):
 	elif(len(neighbors) > 1):
 		sequence = sequence + 1
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  sequence, node_location, (-1,-1), OP_NOOP)
+		pong_enc_sent = message_encode(MSG_ECHO,  sequence, node_location, (-1,-1), OP_NOOP, 0)
 
 		# Send to all neighbors
 		for i in neighbors:
@@ -193,16 +193,17 @@ def process_echo_reply(peer, window, message, address):
 			# Send echo reply to father			
 			peer.sendto(echorep_enc_sent, address)
 	# FIXME: waarom werkt dit niet???
-	elif(len(neighbors) == reply_counter - 1):
+	elif((len(neighbors)-1) == reply_counter):
 		print "poep"
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to father			
-		peer.sendto(echorep_enc_sent, address)
+		peer.sendto(echorep_enc_sent, initiator)
 	
-
+# Echo wave stops and counter is reset
 def decide():
-	# Algorithm should terminate
-	print 'DECIDE, to bo implemented'
+	global reply_counter
+	reply_counter = 0
+
 
 
 def check_multicast(mcast, peer):
@@ -245,7 +246,7 @@ def check_socket_recv(peer, window):
 
 		# Decode message
 		message_dec_recv = message_decode(message_enc_recv)
-		type, sequence, initiator, neighbor_pos, _, _ = message_dec_recv	
+		type, sequence, initiator, neighbor_pos, operation, payload = message_dec_recv	
 		
 		# Check type of message
 		if(type == 1):			# Receiving PONG message
@@ -256,9 +257,7 @@ def check_socket_recv(peer, window):
 				neighbors.append(neighbor)
 			
 		elif(type == 2): 	# Receiving ECHO message
-			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))	
-			#receive_wave(peer, window, message_dec_recv)				
-			#send_echo(peer, window, initiator, sequence)			
+			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))				
 			process_echo(peer, window, message_dec_recv, address)
 
 		elif(type == 3):		# Receiving ECHO REPLY message
@@ -275,14 +274,13 @@ def send_echo_size(peer, window, father):
 		# Get address for ECHO Reply
 		location, address = neighbors[0]
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_SIZE, 1)
+		pong_enc_sent = message_encode(MSG_ECHO_REPLY, father, (-1,-1), OP_SIZE, 1)
 		peer.sendto(pong_enc_sent, address)	
 
 	# Multiple neighbors, send new wave
 	else:
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_SIZE, 1)
-
+		pong_enc_sent = message_encode(MSG_ECHO, node_location, (-1,-1), OP_SIZE, 1)
 		# Sent to all neighbors
 		for i in neighbors:
 			location, address = i
