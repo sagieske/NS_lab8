@@ -101,7 +101,7 @@ def send_echo(peer,window):
 	window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(father) + "(-1,-1), OP_NOOP, 0)")
 	sequencenumber += 1
 
-def send_wave_further(peer,window, message, address):
+def send_wave_further(peer,window, message, father):
 	"""
 	Send wave further to the rest of neighbors
 	"""
@@ -109,24 +109,22 @@ def send_wave_further(peer,window, message, address):
 	global echo_reply_counter
 	echo_reply_counter = 1
 
+	# Send wave to all neighbors
 	for i in neighbors:
 		location, address = i
-		# Do no send wave to father
-		if(address != father):
-			location, address = i
+		# Do not send wave to father
+		if(address == father):
+			pass
+		else: 
 			pong_enc_sent = message_encode(MSG_ECHO,  message[1], message[2], message[3], message[4], message[5])
 			peer.sendto(pong_enc_sent, address)
-		else: 
-			pass
 				
-# Sends reply to father
-def send_echo_reply(peer,window, message):
+def send_echo_reply(peer,window, message, address):
 	"""
-	Send reply to father
+	Send reply to sender
 	"""
-	global father
 	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], message[4], message[5])
-	peer.sendto(pong_enc_sent, father)
+	peer.sendto(pong_enc_sent, address)
 	window.writeln("Echo reply sent to " + str(father)) 
 
 # Process ECHO message
@@ -135,30 +133,29 @@ def process_echo(peer, window, message, address):
 	wave = (sequence, initiator)
 
 	# Set node from which you received echo as father.
-	global father
-	father = address
 
-	window.writeln("Father is set. : " + str(father))
 
-	global last_wave	
-	window.writeln("LAST WAVE = " + str(last_wave))
-
-	
-	# If already received or only 1 neighbor, immediately send echo_reply to father
-	if((wave == last_wave) or len(neighbors) == 1):
-		if((wave == last_wave)):
-			window.writeln("Immediate reply: Double wave")
-		else:
-			window.writeln("Immediate reply: Only 1 neighbor")
-		send_echo_reply(peer,window, message)
-
-	# If more neighbors, send echo to them all
-	elif(len(neighbors) > 1):
-		send_wave_further(peer,window, message, address)
+	# If already received  immediately send echo_reply to sender
+	if((wave == last_wave)):
+		window.writeln("Immediate reply: Double wave")
+		send_echo_reply(peer,window, message, address)
 	else:
-		print "Something went wrong..."
+		# Make sender father:
+		global father
+		father = address
+	
+		#Only 1 neighbor,  immediately send echo_reply to father
+		if(len(neighbors) == 1):
+			window.writeln("Immediate reply: Only 1 neighbor")
+			send_echo_reply(peer,window, message, father)
+		# If more neighbors, send echo to them all
+		elif(len(neighbors) > 1):
+			send_wave_further(peer,window, message, father)
+		else:
+			print "Something went wrong..."
 	
 	# Set wave as last wave
+	global last_wave	
 	last_wave = wave
 		
 	
