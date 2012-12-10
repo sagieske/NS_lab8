@@ -37,13 +37,14 @@ def setup_globals():
 
 def give_info(window):
 	# Print out information in gui
-	global portnumber, node_location, sensor_value
+	global portnumber, node_location, sensorvalue
 	window.write("INFORMATION\nIP:port:\t\t" + str(portnumber) + "\nPosition:\t\t" + str(node_location) + "\nSensor Value:\t\t" + str(sensorvalue) + "\n")
 
 def send_ping(peer):
 	"""
 	Send mulitcast ping
 	"""
+	global sensorvalue
 	#1.1: Send multicast PING with initiators location 
 	#Seq number set to 0 with ping, neighbor is unknown so is set to -1,-1 since this is off the grid)
 	ping_enc_sent = message_encode(MSG_PING, 0, node_location, (-1,-1))
@@ -241,7 +242,10 @@ def send_echo_reply_size(peer, window, message, address, payload, operation):
 	window.writeln("[S] Echo reply sent to " + str(address) + "with payload: " + str(payload) + " and operation: " + str(operation))
 
 ###### TASK 4 ######
-
+def change_value():
+	global sensorvalue
+	sensorvalue = random.randint(0, 10000)
+	return sensorvalue
 
 
 def check_multicast(mcast, peer):
@@ -417,7 +421,19 @@ def main(argv):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Computing size...")
 			send_echo(peer, window, OP_SIZE)
-
+		elif(command == "sensor sum"):
+			window.writeln("> Command entered: " + command)
+			# sum of the sensors
+		elif(command == "sensor minimum"):
+			window.writeln("> Command entered: " + command)
+			# minimum of the sensors
+		elif(command == "sensor maximum"):
+			window.writeln("> Command entered: " + command)
+			# maximum of the sensors
+		elif(command == "value"):
+			window.writeln("> Command entered: " + command)
+			change_value()
+			window.writeln("New sensor value: " + str(sensorvalue))
 		elif (command == ""):
 			pass
 
