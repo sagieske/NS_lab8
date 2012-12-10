@@ -342,6 +342,14 @@ def main(argv):
 
 	# Set up position node
 	move()
+	
+	# FOR TESTING ONLY!!
+	if(len(argv) == 3):
+		nx = int(argv[1])
+		ny = int(argv[2])
+		global node_location
+		node_location = (nx,ny)
+
 
 	# Print out information in gui
 	window.write("INFORMATION\nIP:port:\t" + str(portnumber) + "\nPosition:\t" + str(node_location) + "\nSensor Value:\t" + str(sensorvalue) + "\n")
@@ -351,6 +359,8 @@ def main(argv):
 	
 	# Set time	
 	pingtime = time.time()
+
+
 
 	while window.update():
 		# Resend PING if time > 5s, reset
