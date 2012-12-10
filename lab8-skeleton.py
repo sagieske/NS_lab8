@@ -14,6 +14,8 @@ from socket import *
 
 reply_counter = 0 # Counter for replies received from neighbors
 
+network_size = 0
+
 ########### Task 1 #############
 def setup_globals():
 	# Create global variable
@@ -84,7 +86,7 @@ def list(window):
 
 # FOR FIRST ECHO (Task 2.1)
 # Send echo first time around
-def send_echo(peer,window):
+def send_echo(peer,window, operation):
 	"""
 	Send echo to neighbors
 	"""
@@ -92,13 +94,13 @@ def send_echo(peer,window):
 	global sequencenumber
 	sequencenumber = 0
 	echo_reply_counter = 0
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_NOOP, 0)
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, 0)
 		# Sent to all neighbors
 	for i in neighbors:
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 
-	window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(father) + "(-1,-1), OP_NOOP, 0)")
+	window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(father) + "(-1,-1),"+str(operation)+", 0)")
 	sequencenumber += 1
 
 def send_wave_further(peer,window, message, address):
@@ -250,27 +252,12 @@ def check_socket_recv(peer, window):
 
 ########## TASK 3 ##########
 
-def send_echo_size(peer, window, father):
-	if(len(neighbors) == 1 and father != (-1,-1)):
-		# Get address for ECHO Reply
-		location, address = neighbors[0]
-		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO_REPLY, father, (-1,-1), OP_SIZE, 1)
-		peer.sendto(pong_enc_sent, address)	
-		window.writeln("Send echo reply to: " + str(address))
-
-
-	else:
-		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO, node_location, (-1,-1), OP_SIZE, 1)
-		# Sent to all neighbors
-		for i in neighbors:
-			location, address = i
-			# If known father, do not send back to father
-			if(father == location):
-				pass
-			else:
-				peer.sendto(pong_enc_sent, address)
+def send_echo_reply_size(peer, window, message, address, size):
+	global father
+	global network_size
+	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], OP_SIZE, network_size)
+	peer.sendto(pong_enc_sent, father)
+	window.writeln("Echo reply sent to " + str(father))
 
 def socket_subscribe_mcast(sock, ip):
 	"""
@@ -386,7 +373,11 @@ def main(argv):
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
-			send_echo(peer, window)
+			send_echo(peer, window, OP_NOOP)
+		elif(command == "size"):
+			window.writeln("> Command entered: " + command)
+			window.writeln("Getting size...")
+			send_echo(peer, window, OP_SIZE)
 		elif (command == ""):
 			pass
 
