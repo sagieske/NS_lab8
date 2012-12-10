@@ -149,17 +149,15 @@ def process_echo(peer, window, message, address):
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 	last_wave_type, last_wave_id = last_wave
-	window.writeln("CHECK: " + str(message))
 
 	# If already received  immediately send echo_reply to sender
 	if(wave == last_wave_id):
-		window.writeln("Sending with message : " + str(message[4]))
 		window.writeln("-> Immediate reply: Double wave")
 		if(operation == OP_NOOP):
 			send_echo_reply(peer,window, message, address)
 		else:
 			send_echo_reply_size(peer,window, message, address,payload, OP_NOOP)
-			window.writeln("Send message to: " + str(address) + " father is: " +str(father))
+
 	else:
 		# Make sender father:
 		father = address
@@ -168,33 +166,31 @@ def process_echo(peer, window, message, address):
 		# Only 1 neighbor,  immediately send echo_reply to father
 		if(len(neighbors) == 1):
 			if(message[4] == OP_SIZE):
-				window.writeln("-> Immediate reply: Only 1 neighbor, size")
+				window.writeln("-> Immediate reply: Only 1 neighbor")
 				send_echo_reply_size(peer, window, message, father, 1, last_wave_type)
 			elif(message[4] == OP_NOOP):
-				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
+				window.writeln("-> Immediate reply: Only 1 neighbor")
 				send_echo_reply(peer,window, message, father)
 			else:
-				window.writeln("-> Immediate reply: Only 1 neighbor, SUM")
-				window.writeln("Sensorvalue: " + str(sensorvalue))
+				window.writeln("-> Immediate reply: Only 1 neighbor")
 				send_echo_reply_size(peer, window, message, father, sensorvalue, last_wave_type)
 
 		# If more neighbors, send echo to them all
 		elif(len(neighbors) > 1):
 			send_wave_further(peer,window, message, father)
-			window.writeln("Send wave further")
+			window.writeln("Send wave further...")
 		else:
 			print "Something went wrong..."
 
 	# Set wave as last wave
 
 	last_wave = (operation, wave)
-	window.writeln("Last wave: " + str(last_wave))
+
 
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
 
 #TODO: LAST MESSAGE FOR ECHO SIZE IS A DOUBLE WAVE -> THINGS GO WRONG, MESSAGE WITH OP_NOOP() is sent instead of OP_SIZE!!
-	window.writeln("PROCESS")
 	"""
 	Process received MSG_ECHO_REPLY
 	"""
@@ -205,41 +201,25 @@ def process_echo_reply(peer, window, message, address):
 	(last_wave_type, last_wave_id) = last_wave
 
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
-	window.writeln("(process_echo_reply: OPERATION: " + str(operation))
 	# Increment reply counter	
 	echo_reply_counter += 1
 	
-	window.writeln("Paycounter was: " + str(payload_counter))
 	if(last_wave_type == OP_MIN or operation == OP_MIN):
-		window.writeln("Payload given: " + str(payload))
-		window.writeln("Counter given: " + str(payload_counter))
 		payload_counter = min(payload_counter, payload)
 	elif(last_wave_type == OP_MAX or operation == OP_MAX):
-		window.writeln("Payload given: " + str(payload))
-		window.writeln("Counter given: " + str(payload_counter))
 		payload_counter = max(payload_counter, payload)
 	else:
 		payload_counter += payload
 
-
-
-	window.writeln("Paycounter is: " + str(payload_counter))
-
-
-	window.writeln("MESSAGE: " + str(operation))		
 	# Reply from all neighbors
 	if(len(neighbors) == echo_reply_counter):
 		if(last_wave_type == OP_SUM):
-			window.writeln("OP_SUM last wave")
 			payload_counter += sensorvalue
 		elif(last_wave_type == OP_SIZE):
-			window.writeln("OP_SIZE last wave")
 			payload_counter += 1
 		elif(last_wave_type == OP_MIN):
-			window.writeln("OP_MIN last wave")
 			payload_counter = min(payload, payload_counter)
 		elif(last_wave_type == OP_MAX):
-			window.writeln("OP_MAX last wave")
 			payload_counter = max(payload, payload_counter)
 
 		window.writeln("->Reply from ALL neighbors")
@@ -248,20 +228,11 @@ def process_echo_reply(peer, window, message, address):
 			#payload_counter += 1
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			window.writeln("Payload = " + str(payload_counter))
-			if(message[4] == OP_MIN):
-				window.writeln("Minimum: " + str(value))
-			elif(message[4] == OP_MAX):
-				window.writeln("Maximum: " + str(value))
 			decide()
 		# Send echo reply to father		
 		else:
-			# HIER GAAT IETS FOUT??!)
-			if(last_wave_type == OP_SIZE):
-				window.writeln("OP_SIZE sending to father")
 				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)	
-			else:
-				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)					
-
+					
 		echo_reply_counter = 0
 		payload_counter = 0	
 
@@ -278,10 +249,9 @@ def send_echo_reply_size(peer, window, message, address, payload, operation):
 	"""
 	Send reply to sender to gain size
 	"""
-	window.writeln("(send_echo_reply_size: OPERATION: " + str(operation))
 	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], operation, payload)
 	peer.sendto(pong_enc_sent, address)
-	window.writeln("[S] Echo reply sent to " + str(address) + "with payload: " + str(payload) + " and operation: " + str(operation))
+	window.writeln("[S] Echo reply sent to " + str(address) + " with payload: " + str(payload) + " and operation: " + str(operation))
 
 ###### TASK 4 ######
 def change_value():
