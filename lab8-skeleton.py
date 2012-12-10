@@ -12,7 +12,7 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
-network_size = 0
+
 
 ########### Task 1 #############
 def setup_globals():
