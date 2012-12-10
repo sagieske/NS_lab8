@@ -23,9 +23,10 @@ def setup_globals():
 	received_reply = []			# List to keep track of received echo_reply
 
 	# Global counters
-	global sequencenumber, echo_reply_counter
+	global sequencenumber, echo_reply_counter, payload_counter
 	sequencenumber = 0
 	echo_reply_counter = 0 # Counter for replies received from neighbors
+	payload_counter = 0
 
 	# Global misc
 	global unknown, sensorvalue, portnumber, father
@@ -86,7 +87,7 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window, operation):
+def send_echo(peer,window):
 	"""
 	Initiate echo wave to neighbors
 	"""
@@ -99,7 +100,8 @@ def send_echo(peer,window, operation):
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+str(operation)+", 0)")
+	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ " OP_NOOP, 0)")
+
 
 	# Increment sequencenumber
 	sequencenumber += 1
@@ -138,16 +140,15 @@ def process_echo(peer, window, message, address):
 
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
+	
+	window.writeln("CHECK: " + str(operation))
 
 	# If already received  immediately send echo_reply to sender
 	if((wave == last_wave)):
 		window.writeln("-> Immediate reply: Double wave")
-		# If OP_NOOP
-		if(message[4] == 0):
-			send_echo_reply(peer,window, message, address)
-		# If OP_SIZE
-		elif(message[4] == 1):
-			message[5] = 1
+		if(operation == OP_SIZE):
+			send_echo_reply_size(peer,window, message, address,1, OP_NOOP)
+		else:
 			send_echo_reply(peer,window, message, address)
 	else:
 		# Make sender father:
@@ -156,14 +157,13 @@ def process_echo(peer, window, message, address):
 
 		# Only 1 neighbor,  immediately send echo_reply to father
 		if(len(neighbors) == 1):
-			window.writeln("-> Immediate reply: Only 1 neighbor")
-			if(message[4] == 0):
-				print message[4]
+			if(message[4] == OP_SIZE):
+				window.writeln("-> Immediate reply: Only 1 neighbor, size")
+				send_echo_reply_size(peer, window, message, father, 1)
+			else:
+				window.writeln("-> Immediate reply: Only 1 neighbor")
 				send_echo_reply(peer,window, message, father)
-			elif(message[4] == 1):
-				message[5] = 1
-				print message[5]
-				send_echo_reply(peer, window, message, father)
+
 
 		# If more neighbors, send echo to them all
 		elif(len(neighbors) > 1):
@@ -184,27 +184,39 @@ def process_echo_reply(peer, window, message, address):
 	"""
 	global echo_reply_counter
 	global father
-
+	global payload_counter
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 
 	# Increment reply counter	
 	echo_reply_counter += 1
+
+	if(message[4] == OP_SIZE):
+		window.writeln("HELLO")
+		window.writeln("Paycounter was: " + str(payload_counter))
+		payload_counter += payload
+		window.writeln("Paycounter is: " + str(payload_counter))
+	
 
 	window.writeln("Neighbors: " + str(len(neighbors)))
 	window.writeln("Echo reply: " + str(echo_reply_counter))
 
 	# Reply from all neighbors
 	if(len(neighbors) == echo_reply_counter):
+		payload_counter += 1
 		window.writeln("->Reply from ALL neighbors")		
 		# Node was initiator
 		if(initiator == node_location):
 			window.writeln("I AM INITIATOR! DECIDED \n")
+			window.writeln("Payload = " + str(payload_counter))
 			decide()
 		# Send echo reply to father		
 		else:
-			send_echo_reply(peer,window, message, father)
-
-
+			if(message[4] == OP_SIZE):
+				send_echo_reply_size(peer, window, message, father, payload_counter)				
+			else:
+				send_echo_reply(peer,window, message, father)
+		echo_reply_counter = 0
+		payload_counter = 0	
 
 def decide():
 	"""
@@ -212,6 +224,36 @@ def decide():
 	"""
 	global echo_reply_counter
 	echo_reply_counter = 0
+
+### TASK 3
+def send_echo_size(peer, window):
+	"""
+	Initiate echo wave to gain size to neighbors
+	"""
+	global payload_counter
+	window.writeln("INIT: " + str(payload_counter))
+	# create echo message
+	global sequencenumber
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_SIZE, 0)
+
+	# Sent to all neighbors
+	for i in neighbors:
+		location, address = i
+		peer.sendto(pong_enc_sent, address)
+		
+	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1), OP_SIZE, 0)")
+
+	# Increment sequencenumber
+	sequencenumber += 1
+
+
+def send_echo_reply_size(peer, window, message, address, payload, operation = OP_SIZE):
+	"""
+	Send reply to sender to gain size
+	"""
+	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], operation, payload)
+	peer.sendto(pong_enc_sent, address)
+	window.writeln("[S] Echo reply sent to " + str(father) + "with payload: " + str(payload))
 
 
 
@@ -273,19 +315,6 @@ def check_socket_recv(peer, window):
 			process_echo_reply(peer, window, message_dec_recv, address)
 	except error:
 		pass
-
-
-########## TASK 3 ##########
-
-def send_echo_reply_size(peer, window, message, address, size):
-	global father
-	global network_size
-	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], OP_SIZE, network_size)
-	peer.sendto(pong_enc_sent, father)
-	window.writeln("Echo reply sent to " + str(father))
-	
-	
-	
 
 def socket_subscribe_mcast(sock, ip):
 	"""
@@ -396,11 +425,16 @@ def main(argv):
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
-			send_echo(peer, window, OP_NOOP)
+			send_echo(peer, window)
+		elif (command == "size"):
+			window.writeln("> Command entered: " + command)
+			window.writeln("Sending echo...")
+			send_echo_size(peer, window)
 		elif(command == "size"):
 			window.writeln(">Command entered: " + command)
 			window.writeln("Computing size...")
 			send_echo(peer, window, OP_SIZE)
+
 		elif (command == ""):
 			pass
 
