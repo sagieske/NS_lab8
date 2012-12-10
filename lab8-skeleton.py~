@@ -37,7 +37,7 @@ def setup_globals():
 	print last_wave
 	
 	global value
-	value = 0
+	value = -1
 
 def give_info(window):
 	# Print out information in gui
@@ -174,7 +174,7 @@ def process_echo(peer, window, message, address):
 				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
 				send_echo_reply(peer,window, message, father)
 			else:
-				window.writeln("-> Immediate reply: Only 1 neighbor, sum")
+				window.writeln("-> Immediate reply: Only 1 neighbor, SUM")
 				window.writeln("Sensorvalue: " + str(sensorvalue))
 				send_echo_reply_size(peer, window, message, father, sensorvalue, last_wave_type)
 
@@ -209,14 +209,21 @@ def process_echo_reply(peer, window, message, address):
 	# Increment reply counter	
 	echo_reply_counter += 1
 	
-	if(message[4] == OP_MIN):
-		check_min(payload)
-	elif(message[4] == OP_MAX):
-		check_max(payload)
-
-
 	window.writeln("Paycounter was: " + str(payload_counter))
-	payload_counter += payload
+	if(last_wave_type == OP_MIN or operation == OP_MIN):
+		window.writeln("Payload given: " + str(payload))
+		window.writeln("Counter given: " + str(payload_counter))
+		payload_counter = min(payload_counter, payload)
+	elif(last_wave_type == OP_MAX or operation == OP_MAX):
+		payload_counter = payload
+		window.writeln("Payload given: " + str(payload))
+		window.writeln("Counter given: " + str(payload_counter))
+		payload_counter = max(payload_counter, payload)
+	else:
+		payload_counter += payload
+
+
+
 	window.writeln("Paycounter is: " + str(payload_counter))
 
 
@@ -231,10 +238,10 @@ def process_echo_reply(peer, window, message, address):
 			payload_counter += 1
 		elif(last_wave_type == OP_MIN):
 			window.writeln("OP_MIN last wave")
-			payload_counter = min(sensorvalue, payload)
+			payload_counter = min(payload, payload_counter)
 		elif(last_wave_type == OP_MAX):
 			window.writeln("OP_MAX last wave")
-			payload_counter = max(sensorvalue, payload)
+			payload_counter = max(payload, payload_counter)
 
 		window.writeln("->Reply from ALL neighbors")
 		# Node was initiator
@@ -243,7 +250,7 @@ def process_echo_reply(peer, window, message, address):
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			window.writeln("Payload = " + str(payload_counter))
 			if(message[4] == OP_MIN):
-				window.writeln("Minumim: " + str(value))
+				window.writeln("Minimum: " + str(value))
 			elif(message[4] == OP_MAX):
 				window.writeln("Maximum: " + str(value))
 			decide()
@@ -286,7 +293,10 @@ def change_value():
 
 def check_min(payload):
 	global value
+	global sensorvalue
+	value = sensorvalue
 	if(payload < value):
+		print value
 		value = payload
 
 		
@@ -477,9 +487,13 @@ def main(argv):
 			send_echo(peer, window, OP_SUM)
 		elif(command == "min"):
 			window.writeln("> Command entered: " + command)
+			global payload_counter, sensorvalue
+			payload_counter = sensorvalue
 			send_echo(peer, window, OP_MIN)
 		elif(command == "max"):
 			window.writeln("> Command entered: " + command)
+			global payload_counter, sensorvalue
+			payload_counter = sensorvalue
 			send_echo(peer, window, OP_MAX)
 		elif(command == "value"):
 			window.writeln("> Command entered: " + command)
