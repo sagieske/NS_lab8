@@ -237,7 +237,7 @@ def process_echo_reply(peer, window, message, address):
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			window.writeln("Payload = " + str(payload_counter))
 			if(message[4] == OP_MIN):
-				window.writeln("Minumim: " + str(value))
+				window.writeln("Minimum: " + str(value))
 			elif(message[4] == OP_MAX):
 				window.writeln("Maximum: " + str(value))
 			decide()
@@ -280,7 +280,10 @@ def change_value():
 
 def check_min(payload):
 	global value
+	global sensorvalue
+	value = sensorvalue
 	if(payload < value):
+		print value
 		value = payload
 
 		
