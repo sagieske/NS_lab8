@@ -440,8 +440,6 @@ def main(argv):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
 			send_echo_size(peer, window)
-
-			send_echo(peer, window, OP_NOOP)
 		elif(command == "size"):
 			window.writeln(">Command entered: " + command)
 			window.writeln("Computing size...")
