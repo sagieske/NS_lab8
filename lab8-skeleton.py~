@@ -12,7 +12,7 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
-network_size = 0
+
 
 ########### Task 1 #############
 def setup_globals():
@@ -33,17 +33,19 @@ def setup_globals():
 	sensorvalue = random.randint(0, 10000)
 	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message
 	global last_wave	
-	last_wave = (-1,-1)			# Last wave received.  TODO: is this a list of all waves? Or just last wave?
+	last_wave = (-1,(-1,-1))		# Last wave received.  TODO: is this a list of all waves? Or just last wave?
+	print last_wave
 
 def give_info(window):
 	# Print out information in gui
-	global portnumber, node_location, sensor_value
+	global portnumber, node_location, sensorvalue
 	window.write("INFORMATION\nIP:port:\t\t" + str(portnumber) + "\nPosition:\t\t" + str(node_location) + "\nSensor Value:\t\t" + str(sensorvalue) + "\n")
 
 def send_ping(peer):
 	"""
 	Send mulitcast ping
 	"""
+	global sensorvalue
 	#1.1: Send multicast PING with initiators location 
 	#Seq number set to 0 with ping, neighbor is unknown so is set to -1,-1 since this is off the grid)
 	ping_enc_sent = message_encode(MSG_PING, 0, node_location, (-1,-1))
@@ -87,20 +89,20 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window):
+def send_echo(peer,window, operation, payload):
 	"""
 	Initiate echo wave to neighbors
 	"""
 	# create echo message
 	global sequencenumber
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_NOOP, 0)
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, payload)
 
 	# Sent to all neighbors
 	for i in neighbors:
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ " OP_NOOP, 0)")
+	window.writeln("-> message sent: (MSG_ECHO," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ str(operation)+" , 0)")
 
 	# Increment sequencenumber
 	sequencenumber += 1
@@ -134,29 +136,29 @@ def process_echo(peer, window, message, address):
 	"""
 	Process echo messages
 	"""
-	window.writeln("PROCESS1")
 	global last_wave	
 	global father
 
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
-	
+	last_wave_type, last_wave_id = last_wave
 	window.writeln("CHECK: " + str(message))
 
 	# If already received  immediately send echo_reply to sender
-	if((wave == last_wave)):
+	if(wave == last_wave_id):
 		window.writeln("Sending with message1.1 : " + str(message[4]))
 		window.writeln("-> Immediate reply: Double wave")
-		if(operation == OP_SIZE):
-			send_echo_reply_size(peer,window, message, address,1, OP_NOOP)
-			window.writeln("Send message to: " + str(address) + " father is: " +str(father))
-		else:
+		if(operation == OP_NOOP):
 			send_echo_reply(peer,window, message, address)
+		else:
+			send_echo_reply_size(peer,window, message, address,payload, OP_NOOP)
+			window.writeln("Send message to: " + str(address) + " father is: " +str(father))
 	else:
 		window.writeln("Sending with message2.1 : " + str(message[4]))
 		# Make sender father:
 		father = address
 
+		window.writeln(str(len(neighbors)))
 		# Only 1 neighbor,  immediately send echo_reply to father
 		if(len(neighbors) == 1):
 			if(message[4] == OP_SIZE):
@@ -165,6 +167,7 @@ def process_echo(peer, window, message, address):
 			else:
 				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
 				send_echo_reply(peer,window, message, father)
+
 
 		# If more neighbors, send echo to them all
 		elif(len(neighbors) > 1):
@@ -175,12 +178,13 @@ def process_echo(peer, window, message, address):
 
 	# Set wave as last wave
 
-	last_wave = wave
+	last_wave = (operation, wave)
+	window.writeln("Last wave: " + str(last_wave))
 
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
 
-#TODO: LAST MESSAGE FOR ECHO SIZE IS A DOUBLE WAVE -> THINGS GO WRONG
+#TODO: LAST MESSAGE FOR ECHO SIZE IS A DOUBLE WAVE -> THINGS GO WRONG, MESSAGE WITH OP_NOOP() is sent instead of OP_SIZE!!
 	window.writeln("PROCESS")
 	"""
 	Process received MSG_ECHO_REPLY
@@ -188,6 +192,9 @@ def process_echo_reply(peer, window, message, address):
 	global echo_reply_counter
 	global father
 	global payload_counter
+	global last_wave
+	(last_wave_type, last_wave_id) = last_wave
+
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 	window.writeln("(process_echo_reply: OPERATION: " + str(operation))
 	# Increment reply counter	
@@ -202,21 +209,27 @@ def process_echo_reply(peer, window, message, address):
 	window.writeln("MESSAGE: " + str(operation))		
 	# Reply from all neighbors
 	if(len(neighbors) == echo_reply_counter):
-		payload_counter += 1
+		if(last_wave_type == OP_SUM):
+			window.writeln("OP_SUM")
+			payload_counter += payload
+		elif(last_wave_type == OP_SIZE):
+			window.writeln("OP_SIZE")
+			payload_counter += 1
 		window.writeln("->Reply from ALL neighbors")
 		# Node was initiator
 		if(initiator == node_location):
+			#payload_counter += 1
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			window.writeln("Payload = " + str(payload_counter))
 			decide()
 		# Send echo reply to father		
 		else:
 			# HIER GAAT IETS FOUT??!)
-			if(message[4] == OP_SIZE):
-				window.writeln("OP_SIZE")
-				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)	
+			if(last_wave_type == OP_SIZE):
+				window.writeln("OP_SIZE sending to father")
+				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)	
 			else:
-				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)					
+				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)					
 				#send_echo_reply(peer,window, message, father)
 		echo_reply_counter = 0
 		payload_counter = 0	
@@ -228,27 +241,7 @@ def decide():
 	global echo_reply_counter
 	echo_reply_counter = 0
 
-### TASK 3
-def send_echo_size(peer, window):
-	"""
-	Initiate echo wave to gain size to neighbors
-	"""
-	global payload_counter
-	window.writeln("INIT: " + str(payload_counter))
-	# create echo message
-	global sequencenumber
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_SIZE, 0)
-
-	# Sent to all neighbors
-	for i in neighbors:
-		location, address = i
-		peer.sendto(pong_enc_sent, address)
-		
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1), OP_SIZE, 0)")
-
-	# Increment sequencenumber
-	sequencenumber += 1
-
+###### TASK 3 #####
 
 def send_echo_reply_size(peer, window, message, address, payload, operation):
 	"""
@@ -259,6 +252,11 @@ def send_echo_reply_size(peer, window, message, address, payload, operation):
 	peer.sendto(pong_enc_sent, address)
 	window.writeln("[S] Echo reply sent to " + str(address) + "with payload: " + str(payload) + " and operation: " + str(operation))
 
+###### TASK 4 ######
+def change_value():
+	global sensorvalue
+	sensorvalue = random.randint(0, 10000)
+	return sensorvalue
 
 
 def check_multicast(mcast, peer):
@@ -429,12 +427,24 @@ def main(argv):
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
-			send_echo(peer, window)
+			send_echo(peer, window, OP_NOOP, 0)
 		elif (command == "size"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Computing size...")
-			send_echo_size(peer, window)
-
+			send_echo(peer, window, OP_SIZE, 0)
+		elif(command == "sensor sum"):
+			window.writeln("> Command entered: " + command)
+			send_echo(peer, window, OP_SUM, sensorvalue)
+		elif(command == "sensor minimum"):
+			window.writeln("> Command entered: " + command)
+			send_echo(peer, window, OP_MIN, sensorvalue)
+		elif(command == "sensor maximum"):
+			window.writeln("> Command entered: " + command)
+			send_echo(peer, window, OP_MAX, sensorvalue)
+		elif(command == "value"):
+			window.writeln("> Command entered: " + command)
+			change_value()
+			window.writeln("New sensor value: " + str(sensorvalue))
 		elif (command == ""):
 			pass
 

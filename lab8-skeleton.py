@@ -33,7 +33,8 @@ def setup_globals():
 	sensorvalue = random.randint(0, 10000)
 	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message
 	global last_wave	
-	last_wave = (-1,-1)			# Last wave received.  TODO: is this a list of all waves? Or just last wave?
+	last_wave = (-1,(-1,-1))		# Last wave received.  TODO: is this a list of all waves? Or just last wave?
+	print last_wave
 
 def give_info(window):
 	# Print out information in gui
@@ -135,17 +136,16 @@ def process_echo(peer, window, message, address):
 	"""
 	Process echo messages
 	"""
-	window.writeln("PROCESS1")
 	global last_wave	
 	global father
 
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
-	
+	last_wave_type, last_wave_id = last_wave
 	window.writeln("CHECK: " + str(message))
 
 	# If already received  immediately send echo_reply to sender
-	if((wave == last_wave)):
+	if(wave == last_wave_id):
 		window.writeln("Sending with message1.1 : " + str(message[4]))
 		window.writeln("-> Immediate reply: Double wave")
 		if(operation == OP_NOOP):
@@ -158,11 +158,12 @@ def process_echo(peer, window, message, address):
 		# Make sender father:
 		father = address
 
+		window.writeln(str(len(neighbors)))
 		# Only 1 neighbor,  immediately send echo_reply to father
 		if(len(neighbors) == 1):
 			if(message[4] == OP_SIZE):
 				window.writeln("-> Immediate reply: Only 1 neighbor, size")
-				send_echo_reply_size(peer, window, message, father, payload, OP_SIZE)
+				send_echo_reply_size(peer, window, message, father, 1, OP_SIZE)
 			else:
 				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
 				send_echo_reply(peer,window, message, father)
@@ -177,7 +178,8 @@ def process_echo(peer, window, message, address):
 
 	# Set wave as last wave
 
-	last_wave = wave
+	last_wave = (operation, wave)
+	window.writeln("Last wave: " + str(last_wave))
 
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
@@ -190,6 +192,9 @@ def process_echo_reply(peer, window, message, address):
 	global echo_reply_counter
 	global father
 	global payload_counter
+	global last_wave
+	(last_wave_type, last_wave_id) = last_wave
+
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 	window.writeln("(process_echo_reply: OPERATION: " + str(operation))
 	# Increment reply counter	
@@ -204,24 +209,27 @@ def process_echo_reply(peer, window, message, address):
 	window.writeln("MESSAGE: " + str(operation))		
 	# Reply from all neighbors
 	if(len(neighbors) == echo_reply_counter):
-		if(message[4] == OP_SUM):
+		if(last_wave_type == OP_SUM):
+			window.writeln("OP_SUM")
 			payload_counter += payload
-		elif(message[4] == OP_SIZE):
+		elif(last_wave_type == OP_SIZE):
+			window.writeln("OP_SIZE")
 			payload_counter += 1
 		window.writeln("->Reply from ALL neighbors")
 		# Node was initiator
 		if(initiator == node_location):
+			#payload_counter += 1
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			window.writeln("Payload = " + str(payload_counter))
 			decide()
 		# Send echo reply to father		
 		else:
 			# HIER GAAT IETS FOUT??!)
-			if(message[4] == OP_SIZE):
-				window.writeln("OP_SIZE")
-				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)	
+			if(last_wave_type == OP_SIZE):
+				window.writeln("OP_SIZE sending to father")
+				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)	
 			else:
-				send_echo_reply_size(peer, window, message, father, payload_counter, operation)					
+				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)					
 				#send_echo_reply(peer,window, message, father)
 		echo_reply_counter = 0
 		payload_counter = 0	
@@ -423,6 +431,7 @@ def main(argv):
 		elif (command == "size"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Computing size...")
+			window.writeln("START PAYLOAD: " + str(payload_counter))
 			send_echo(peer, window, OP_SIZE, 0)
 		elif(command == "sensor sum"):
 			window.writeln("> Command entered: " + command)
