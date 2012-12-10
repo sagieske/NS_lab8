@@ -120,10 +120,14 @@ def send_wave_further(peer,window, message, address):
 			pass
 				
 # Sends reply to father
-def send_echo_reply(peer,window, message, address):
+def send_echo_reply(peer,window, message):
+	"""
+	Send reply to father
+	"""
+	global father
 	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], message[4], message[5])
-	peer.sendto(pong_enc_sent, address)
-	window.writeln("Echo reply sent to " + str(address)) 
+	peer.sendto(pong_enc_sent, father)
+	window.writeln("Echo reply sent to " + str(father)) 
 
 # Process ECHO message
 def process_echo(peer, window, message, address):
@@ -132,21 +136,16 @@ def process_echo(peer, window, message, address):
 
 	# Set node from which you received echo as father.
 	global father
+	global last_wave	
 	father = address
 
-	window.writeln("Father is set. : " + str(father))
-
-	global last_wave	
-	window.writeln("LAST WAVE = " + str(last_wave))
-
-	
 	# If already received or only 1 neighbor, immediately send echo_reply to father
 	if((wave == last_wave) or len(neighbors) == 1):
 		if((wave == last_wave)):
 			window.writeln("Immediate reply: Double wave")
 		else:
 			window.writeln("Immediate reply: Only 1 neighbor")
-		send_echo_reply(peer,window, message, address)
+		send_echo_reply(peer,window, message)
 
 	# If more neighbors, send echo to them all
 	elif(len(neighbors) > 1):
@@ -179,7 +178,7 @@ def process_echo_reply(peer, window, message, address):
 			decide()
 		# Send echo reply to father		
 		elif(initiator != node_location):
-			send_echo_reply(peer,window, message, father)
+			send_echo_reply(peer,window, message)
 
 	
 # Echo wave stops and counter is reset
