@@ -179,6 +179,7 @@ def process_echo(peer, window, message, address):
 			location, address = i
 			# If known father, do not send back to father
 			if(initiator == location):
+				print 'YOOOOO'
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
