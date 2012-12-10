@@ -88,13 +88,13 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window, operation):
+def send_echo(peer,window, operation, payload):
 	"""
 	Initiate echo wave to neighbors
 	"""
 	# create echo message
 	global sequencenumber
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, 0)
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, payload)
 
 	# Sent to all neighbors
 	for i in neighbors:
@@ -148,11 +148,11 @@ def process_echo(peer, window, message, address):
 	if((wave == last_wave)):
 		window.writeln("Sending with message1.1 : " + str(message[4]))
 		window.writeln("-> Immediate reply: Double wave")
-		if(operation == OP_SIZE):
-			send_echo_reply_size(peer,window, message, address,1, OP_NOOP)
-			window.writeln("Send message to: " + str(address) + " father is: " +str(father))
-		else:
+		if(operation == OP_NOOP):
 			send_echo_reply(peer,window, message, address)
+		else:
+			send_echo_reply_size(peer,window, message, address,payload, OP_NOOP)
+			window.writeln("Send message to: " + str(address) + " father is: " +str(father))
 	else:
 		window.writeln("Sending with message2.1 : " + str(message[4]))
 		# Make sender father:
@@ -162,7 +162,7 @@ def process_echo(peer, window, message, address):
 		if(len(neighbors) == 1):
 			if(message[4] == OP_SIZE):
 				window.writeln("-> Immediate reply: Only 1 neighbor, size")
-				send_echo_reply_size(peer, window, message, father, 1, OP_SIZE)
+				send_echo_reply_size(peer, window, message, father, payload, OP_SIZE)
 			else:
 				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
 				send_echo_reply(peer,window, message, father)
@@ -204,7 +204,10 @@ def process_echo_reply(peer, window, message, address):
 	window.writeln("MESSAGE: " + str(operation))		
 	# Reply from all neighbors
 	if(len(neighbors) == echo_reply_counter):
-		payload_counter += 1
+		if(message[4] == OP_SUM):
+			payload_counter += payload
+		elif(message[4] == OP_SIZE):
+			payload_counter += 1
 		window.writeln("->Reply from ALL neighbors")
 		# Node was initiator
 		if(initiator == node_location):
@@ -218,7 +221,7 @@ def process_echo_reply(peer, window, message, address):
 				window.writeln("OP_SIZE")
 				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)	
 			else:
-				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)					
+				send_echo_reply_size(peer, window, message, father, payload_counter, operation)					
 				#send_echo_reply(peer,window, message, father)
 		echo_reply_counter = 0
 		payload_counter = 0	
@@ -416,20 +419,20 @@ def main(argv):
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
-			send_echo(peer, window, OP_NOOP)
+			send_echo(peer, window, OP_NOOP, 0)
 		elif (command == "size"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Computing size...")
-			send_echo(peer, window, OP_SIZE)
+			send_echo(peer, window, OP_SIZE, 0)
 		elif(command == "sensor sum"):
 			window.writeln("> Command entered: " + command)
-			# sum of the sensors
+			send_echo(peer, window, OP_SUM, sensorvalue)
 		elif(command == "sensor minimum"):
 			window.writeln("> Command entered: " + command)
-			# minimum of the sensors
+			send_echo(peer, window, OP_MIN, sensorvalue)
 		elif(command == "sensor maximum"):
 			window.writeln("> Command entered: " + command)
-			# maximum of the sensors
+			send_echo(peer, window, OP_MAX, sensorvalue)
 		elif(command == "value"):
 			window.writeln("> Command entered: " + command)
 			change_value()
