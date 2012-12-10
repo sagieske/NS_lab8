@@ -99,7 +99,7 @@ def send_echo(peer,window, operation):
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+str(operation)", 0)")
+	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+str(operation)+", 0)")
 
 	# Increment sequencenumber
 	sequencenumber += 1
@@ -142,7 +142,13 @@ def process_echo(peer, window, message, address):
 	# If already received  immediately send echo_reply to sender
 	if((wave == last_wave)):
 		window.writeln("-> Immediate reply: Double wave")
-		send_echo_reply(peer,window, message, address)
+		# If OP_NOOP
+		if(message[4] == 0):
+			send_echo_reply(peer,window, message, address)
+		# If OP_SIZE
+		elif(message[4] == 1):
+			message[5] = 1
+			send_echo_reply(peer,window, message, address)
 	else:
 		# Make sender father:
 		global father
@@ -151,7 +157,13 @@ def process_echo(peer, window, message, address):
 		# Only 1 neighbor,  immediately send echo_reply to father
 		if(len(neighbors) == 1):
 			window.writeln("-> Immediate reply: Only 1 neighbor")
-			send_echo_reply(peer,window, message, father)
+			if(message[4] == 0):
+				print message[4]
+				send_echo_reply(peer,window, message, father)
+			elif(message[4] == 1):
+				message[5] = 1
+				print message[5]
+				send_echo_reply(peer, window, message, father)
 
 		# If more neighbors, send echo to them all
 		elif(len(neighbors) > 1):
