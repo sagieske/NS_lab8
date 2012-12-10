@@ -92,7 +92,7 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window, operation, payload):
+def send_echo(peer,window, operation):
 	"""
 	Initiate echo wave to neighbors
 	"""
@@ -101,7 +101,7 @@ def send_echo(peer,window, operation, payload):
 	global last_wave, node_location
 	# needed?
 	last_wave = (operation, (node_location, sequencenumber))
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, payload)
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, 0)
 
 	# Sent to all neighbors
 	for i in neighbors:
@@ -460,21 +460,21 @@ def main(argv):
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
-			send_echo(peer, window, OP_NOOP, 0)
+			send_echo(peer, window, OP_NOOP)
 		elif (command == "size"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Computing size...")
 			window.writeln("START PAYLOAD: " + str(payload_counter))
-			send_echo(peer, window, OP_SIZE, 0)
+			send_echo(peer, window, OP_SIZE)
 		elif(command == "sensor sum"):
 			window.writeln("> Command entered: " + command)
-			send_echo(peer, window, OP_SUM, sensorvalue)
+			send_echo(peer, window, OP_SUM)
 		elif(command == "sensor minimum"):
 			window.writeln("> Command entered: " + command)
-			send_echo(peer, window, OP_MIN, sensorvalue)
+			send_echo(peer, window, OP_MIN)
 		elif(command == "sensor maximum"):
 			window.writeln("> Command entered: " + command)
-			send_echo(peer, window, OP_MAX, sensorvalue)
+			send_echo(peer, window, OP_MAX)
 		elif(command == "value"):
 			window.writeln("> Command entered: " + command)
 			change_value()
