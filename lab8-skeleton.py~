@@ -12,7 +12,7 @@ from gui import MainWindow
 from sensor import *
 from socket import *
 
-reply_counter = 0 # Counter for replies received from neighbors
+
 
 ########### Task 1 #############
 def setup_globals():
@@ -23,8 +23,9 @@ def setup_globals():
 	received_reply = []			# List to keep track of received echo_reply
 
 	# Global counters
-	global sequenceNode
-	sequenceNode = 0
+	global sequencenumber, echo_reply_counter
+	sequencenumber = 0
+	echo_reply_counter = 0 # Counter for replies received from neighbors
 
 	# Global misc
 	global unknown, sensorvalue, portnumber, father
@@ -33,6 +34,10 @@ def setup_globals():
 	global last_wave	
 	last_wave = (-1,-1)			# Last wave received.  TODO: is this a list of all waves? Or just last wave?
 
+def give_info(window):
+	# Print out information in gui
+	global portnumber, node_location, sensor_value
+	window.write("INFORMATION\nIP:port:\t\t" + str(portnumber) + "\nPosition:\t\t" + str(node_location) + "\nSensor Value:\t\t" + str(sensorvalue) + "\n")
 
 def send_ping(peer):
 	"""
@@ -42,11 +47,10 @@ def send_ping(peer):
 	#Seq number set to 0 with ping, neighbor is unknown so is set to -1,-1 since this is off the grid)
 	ping_enc_sent = message_encode(MSG_PING, 0, node_location, (-1,-1))
 	peer.sendto(ping_enc_sent, (MCAST_GRP, MCAST_PORT))
-	print "SEND_PING ready"
 
 def send_pong(peer, initiator, address):
 	"""
-	Send mulitcast ping
+	Send pong
 	"""
 	pong_location = node_location
 	pong_enc_sent = message_encode(MSG_PONG, 0, initiator, pong_location)
@@ -55,7 +59,7 @@ def send_pong(peer, initiator, address):
 #TODO: Changed for testing
 def move(inputx = -1, inputy = -1):
 	"""
-	Creates random position for node in 100 x 100 grid
+	Creates random position for node in grid of GRIDSIZE x GRIDSIZE
 	"""
 	#TODO: Remove if else for submission!
 	global nx, ny,  node_location
@@ -82,114 +86,120 @@ def list(window):
 
 ########### Task 2 #############
 
-# FOR FIRST ECHO (Task 2.1)
-# Send echo first time around
 def send_echo(peer,window):
 	"""
-	Send echo to neighbors
+	Initiate echo wave to neighbors
 	"""
-	global echo_reply_counter
+	# create echo message
 	global sequencenumber
-	sequencenumber = 0
-	echo_reply_counter = 0
 	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_NOOP, 0)
-		# Sent to all neighbors
+
+	# Sent to all neighbors
 	for i in neighbors:
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 		
-	window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(father) + "(-1,-1), OP_NOOP, 0)")
+	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1), OP_NOOP, 0)")
+
+	# Increment sequencenumber
 	sequencenumber += 1
 
-def send_wave_further(peer,window, message, address):
+def send_wave_further(peer,window, message, father):
 	"""
 	Send wave further to the rest of neighbors
 	"""
-	# set echo reply counter to 1, no reply is needed from father
 	global echo_reply_counter
-	echo_reply_counter = 1
+	echo_reply_counter += 1
 
+	# Send wave to all neighbors
 	for i in neighbors:
 		location, address = i
-		# Do no send wave to father
-		if(address != father):
-			location, address = i
+		# Do not send wave to father
+		if(address == father):
+			pass
+		else: 
 			pong_enc_sent = message_encode(MSG_ECHO,  message[1], message[2], message[3], message[4], message[5])
 			peer.sendto(pong_enc_sent, address)
-		else: 
-			pass
 				
-# Sends reply to father
-def send_echo_reply(peer,window, message):
+def send_echo_reply(peer,window, message, address):
 	"""
-	Send reply to father
+	Send reply to sender
 	"""
-	global father
 	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], message[4], message[5])
-	peer.sendto(pong_enc_sent, father)
-	window.writeln("Echo reply sent to " + str(father)) 
+	peer.sendto(pong_enc_sent, address)
+	window.writeln("[S] Echo reply sent to " + str(father)) 
 
-# Process ECHO message
 def process_echo(peer, window, message, address):
+	"""
+	Process echo messages
+	"""
+
+	global last_wave	
+
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 
-	# Set node from which you received echo as father.
-	global father
-	father = address
-
-	window.writeln("Father is set. : " + str(father))
-
-	global last_wave	
-	window.writeln("LAST WAVE = " + str(last_wave))
-
-	
-	# If already received or only 1 neighbor, immediately send echo_reply to father
-	if((wave == last_wave) or len(neighbors) == 1):
-		if((wave == last_wave)):
-			window.writeln("Immediate reply: Double wave")
-		else:
-			window.writeln("Immediate reply: Only 1 neighbor")
-		send_echo_reply(peer,window, message)
-
-	# If more neighbors, send echo to them all
-	elif(len(neighbors) > 1):
-		send_wave_further(peer,window, message, address)
+	# If already received  immediately send echo_reply to sender
+	if((wave == last_wave)):
+		window.writeln("-> Immediate reply: Double wave")
+		send_echo_reply(peer,window, message, address)
 	else:
-		print "Something went wrong..."
+		# Make sender father:
+		global father
+		father = address
+	
+		# Only 1 neighbor,  immediately send echo_reply to father
+		if(len(neighbors) == 1):
+			window.writeln("-> Immediate reply: Only 1 neighbor")
+			send_echo_reply(peer,window, message, father)
+
+		# If more neighbors, send echo to them all
+		elif(len(neighbors) > 1):
+			send_wave_further(peer,window, message, father)
+		
+		else:
+			print "Something went wrong..."
 	
 	# Set wave as last wave
+
 	last_wave = wave
 		
 	
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
+	"""
+	Process received MSG_ECHO_REPLY
+	"""
 	global echo_reply_counter
 	global father
 
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
+
 	# Increment reply counter	
 	echo_reply_counter += 1
 	
-	window.writeln("Reply counter: "  + str(echo_reply_counter))
-	window.writeln("Neighbors counter: "  + str(len(neighbors)))
+	window.writeln("Neighbors: " + str(len(neighbors)))
+	window.writeln("Echo reply: " + str(echo_reply_counter))
+
 	# Reply from all neighbors
 	if(len(neighbors) == echo_reply_counter):
-		window.writeln("Reply from ALL neighbors")		
-		print 'Neighbors: ', len(neighbors)
+		window.writeln("->Reply from ALL neighbors")		
 		# Node was initiator
 		if(initiator == node_location):
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			decide()
 		# Send echo reply to father		
-		elif(initiator != node_location):
-			send_echo_reply(peer,window, message)
+		else:
+			send_echo_reply(peer,window, message, father)
 
 	
-# Echo wave stops and counter is reset
+
 def decide():
-	global reply_counter
-	reply_counter = 0
+	"""
+	Echo wave stops and counter is reset
+	"""
+	global echo_reply_counter
+	echo_reply_counter = 0
 
 
 
@@ -243,11 +253,11 @@ def check_socket_recv(peer, window):
 				neighbors.append(neighbor)
 			 
 		elif(type == 2): 	# Receiving ECHO message
-			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence) + "from: " + str(address))		
+			window.writeln("[R] Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence) + "from: " + str(address))		
 			process_echo(peer, window, message_dec_recv, address)
 
 		elif(type == 3):		# Receiving ECHO REPLY message
-			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence) + "from: " + str(address))	
+			window.writeln("[R] Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence) + "from: " + str(address))	
 			process_echo_reply(peer, window, message_dec_recv, address)
 	except error:
 		pass
@@ -262,7 +272,7 @@ def send_echo_size(peer, window, father):
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO_REPLY, father, (-1,-1), OP_SIZE, 1)
 		peer.sendto(pong_enc_sent, address)	
-		window.writeln("Send echo reply to: " + str(address))
+		window.writeln("[S] Send echo reply to: " + str(address))
 
 
 	else:
@@ -320,11 +330,6 @@ def main(argv):
 	# Get socket information
 	father = peer.getsockname()
 	_,portnumber = father
-	#address, portnumber = peer.getsockname()
-	
-	global a, b
-	a = 1
-	b = 2
 
 	# Set blocking to zero
 	peer.setblocking(0)
@@ -341,17 +346,13 @@ def main(argv):
 		global node_location
 		node_location = (nx,ny)
 
-
-	# Print out information in gui
-	window.write("INFORMATION\nIP:port:\t" + str(portnumber) + "\nPosition:\t" + str(node_location) + "\nSensor Value:\t" + str(sensorvalue) + "\n")
-
 	# Send multicast PING
 	send_ping(peer)
 	
 	# Set time	
 	pingtime = time.time()
 
-
+	give_info(window)
 
 	while window.update():
 		# Resend PING if time > 5s, reset
@@ -388,6 +389,10 @@ def main(argv):
 			window.writeln("> Command entered: " + command)
 			move(int(test[1]), int(test[2]))
 			window.writeln("New location:" + str(node_location))
+		#TODO: For testing only
+		elif (command == "info"):
+			window.writeln("> Command entered: " + command)
+			give_info(window)
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
