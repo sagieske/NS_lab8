@@ -27,7 +27,7 @@ def setup_globals():
 	sequenceNode = 0
 
 	# Global misc
-	global unknown, sensorvalue, portnumber
+	global unknown, sensorvalue, portnumber, father
 	sensorvalue = random.randint(0, 10000)
 	unknown = (-1,-1)			# Used when location is unknown (father) or unnecessary (neighbors) in message
 	global last_wave	
@@ -96,9 +96,9 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO_REPLY,  seqnumber, father, (-1,-1), OP_NOOP, 0)
 		peer.sendto(pong_enc_sent, address)
-		window.writeln("Send echo reply to: " + str(address))
+		window.writeln("MSG_ECHO_REPLY, message sent: " + str(pong_enc_sent))
 		window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
-
+		window.writeln("-")
 	# Multiple neighbors, send new wave
 	else:
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
@@ -112,9 +112,11 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
+				window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(seqnumber) + "," + str(father) + "(-1,-1), OP_NOOP, 0)")
+				window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
 
 		# Debug line
-		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
+		#window.writeln("\nEcho sent with init from: " + str(node_location) + "\tSequence: " + str(seqnumber))	
 
 
 """
@@ -141,6 +143,11 @@ def process_echo(peer, window, message, address):
 def process_echo(peer, window, message, address):
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
+
+	# Set node from which you received echo as father.
+	global father
+	father = address
+
 	print 'Wave1: ', wave
 	global last_wave	
 	window.writeln("LAST WAVE = " + str(last_wave))
@@ -157,6 +164,7 @@ def process_echo(peer, window, message, address):
 		# Send echo reply to sender		
 		peer.sendto(echorep_enc_sent, address)
 		window.writeln("Send echo reply to: " + str(address))
+		window.writeln("HERE?")
 
 	# If more neighbors, send echo to them all
 	elif(len(neighbors) > 1):
@@ -186,6 +194,7 @@ def process_echo(peer, window, message, address):
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
 	global reply_counter
+	global father
 	window.writeln("1: "  + str(reply_counter))
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 	# Increment reply counter	
@@ -208,15 +217,15 @@ def process_echo_reply(peer, window, message, address):
 			# Send echo reply to father			
 			peer.sendto(echorep_enc_sent, address)
 			window.writeln("Send echo reply to: " + str(address))
+			window.writeln("DOING IT WRONG? ")
+			window.writeln("Send echo reply to father: " + str(father))
 	# FIXME: waarom werkt dit niet???
-	"""
 	elif((len(neighbors)-1) == reply_counter):
-		print "poep"
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to father			
-		peer.sendto(echorep_enc_sent, address)
-		window.writeln("Send echo reply to: " + str(address))
-		"""
+		peer.sendto(echorep_enc_sent, father)
+		window.writeln("Send echo reply to FATHER: " + str(father))
+
 	
 # Echo wave stops and counter is reset
 def decide():
@@ -273,13 +282,13 @@ def check_socket_recv(peer, window):
 			neighbor = (neighbor_pos, address)
 			if neighbor not in neighbors:
 				neighbors.append(neighbor)
-			
+			 
 		elif(type == 2): 	# Receiving ECHO message
-			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence))				
+			window.writeln("Received ECHO wave: " + str(initiator) + "\tSequence: " + str(sequence) + "from: " + str(address))		
 			process_echo(peer, window, message_dec_recv, address)
 
 		elif(type == 3):		# Receiving ECHO REPLY message
-			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence))	
+			window.writeln("Received ECHO REPLY to wave: " + str(initiator) + "\tSequence: " + str(sequence) + "from: " + str(address))	
 			process_echo_reply(peer, window, message_dec_recv, address)
 	except error:
 		pass
@@ -295,6 +304,7 @@ def send_echo_size(peer, window, father):
 		pong_enc_sent = message_encode(MSG_ECHO_REPLY, father, (-1,-1), OP_SIZE, 1)
 		peer.sendto(pong_enc_sent, address)	
 		window.writeln("Send echo reply to: " + str(address))
+
 
 	else:
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
@@ -347,9 +357,11 @@ def main(argv):
 	# Set up most of the globals
 	setup_globals()
 
-	global portnumber
+	global portnumber, father
 	# Get socket information
-	_, portnumber = peer.getsockname()
+	father = peer.getsockname()
+	_,portnumber = father
+	#address, portnumber = peer.getsockname()
 	
 	global a, b
 	a = 1
@@ -419,8 +431,8 @@ def main(argv):
 			window.writeln("New location:" + str(node_location))
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
+			window.writeln("Sending echo...")
 			send_echo(peer, window)
-
 		elif (command == ""):
 			pass
 
