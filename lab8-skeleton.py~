@@ -35,6 +35,9 @@ def setup_globals():
 	global last_wave	
 	last_wave = (-1,(-1,-1))		# Last wave received.  TODO: is this a list of all waves? Or just last wave?
 	print last_wave
+	
+	global value
+	value = 0
 
 def give_info(window):
 	# Print out information in gui
@@ -169,13 +172,11 @@ def process_echo(peer, window, message, address):
 				send_echo_reply_size(peer, window, message, father, 1, last_wave_type)
 			elif(message[4] == OP_NOOP):
 				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
-				send_echo_reply(peer,window, message, father
+				send_echo_reply(peer,window, message, father)
 			else:
 				window.writeln("-> Immediate reply: Only 1 neighbor, sum")
 				window.writeln("Sensorvalue: " + str(sensorvalue))
 				send_echo_reply_size(peer, window, message, father, sensorvalue, last_wave_type)
-
-
 
 		# If more neighbors, send echo to them all
 		elif(len(neighbors) > 1):
@@ -207,12 +208,17 @@ def process_echo_reply(peer, window, message, address):
 	window.writeln("(process_echo_reply: OPERATION: " + str(operation))
 	# Increment reply counter	
 	echo_reply_counter += 1
+	
+	if(message[4] == OP_MIN):
+		check_min(payload)
+	elif(message[4] == OP_MAX):
+		check_max(payload)
 
 
 	window.writeln("Paycounter was: " + str(payload_counter))
 	payload_counter += payload
 	window.writeln("Paycounter is: " + str(payload_counter))
-	
+
 
 	window.writeln("MESSAGE: " + str(operation))		
 	# Reply from all neighbors
@@ -225,7 +231,6 @@ def process_echo_reply(peer, window, message, address):
 			payload_counter += 1
 		elif(last_wave_type == OP_MIN):
 			window.writeln("OP_MIN last wave")
-			window.writeln("sensorvalue: " + str(sensorvalue) + " or payload: " + str(payload))
 			payload_counter = min(sensorvalue, payload)
 		elif(last_wave_type == OP_MAX):
 			window.writeln("OP_MAX last wave")
@@ -237,6 +242,10 @@ def process_echo_reply(peer, window, message, address):
 			#payload_counter += 1
 			window.writeln("I AM INITIATOR! DECIDED \n")
 			window.writeln("Payload = " + str(payload_counter))
+			if(message[4] == OP_MIN):
+				window.writeln("Minumim: " + str(value))
+			elif(message[4] == OP_MAX):
+				window.writeln("Maximum: " + str(value))
 			decide()
 		# Send echo reply to father		
 		else:
@@ -273,6 +282,20 @@ def change_value():
 	global sensorvalue
 	sensorvalue = random.randint(0, 10000)
 	return sensorvalue
+	
+
+def check_min(payload):
+	global value
+	if(payload < value):
+		value = payload
+
+		
+def check_max(payload):
+	global value
+	if(payload > value):
+		value = payload
+
+		
 
 
 def check_multicast(mcast, peer):

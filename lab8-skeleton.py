@@ -231,7 +231,6 @@ def process_echo_reply(peer, window, message, address):
 			payload_counter += 1
 		elif(last_wave_type == OP_MIN):
 			window.writeln("OP_MIN last wave")
-			window.writeln("sensorvalue: " + str(sensorvalue) + " or payload: " + str(payload))
 			payload_counter = min(sensorvalue, payload)
 		elif(last_wave_type == OP_MAX):
 			window.writeln("OP_MAX last wave")
