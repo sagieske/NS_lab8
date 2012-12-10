@@ -87,7 +87,7 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window, operation):
+def send_echo(peer,window):
 	"""
 	Initiate echo wave to neighbors
 	"""
@@ -214,8 +214,7 @@ def process_echo_reply(peer, window, message, address):
 			else:
 				send_echo_reply(peer,window, message, father)
 		echo_reply_counter = 0
-		payload_counter = 0
-	
+		payload_counter = 0	
 
 def decide():
 	"""
@@ -223,6 +222,36 @@ def decide():
 	"""
 	global echo_reply_counter
 	echo_reply_counter = 0
+
+### TASK 3
+def send_echo_size(peer, window):
+	"""
+	Initiate echo wave to gain size to neighbors
+	"""
+	global payload_counter
+	window.writeln("INIT: " + str(payload_counter))
+	# create echo message
+	global sequencenumber
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_SIZE, 0)
+
+	# Sent to all neighbors
+	for i in neighbors:
+		location, address = i
+		peer.sendto(pong_enc_sent, address)
+		
+	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1), OP_SIZE, 0)")
+
+	# Increment sequencenumber
+	sequencenumber += 1
+
+
+def send_echo_reply_size(peer, window, message, address, payload, operation = OP_SIZE):
+	"""
+	Send reply to sender to gain size
+	"""
+	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], operation, payload)
+	peer.sendto(pong_enc_sent, address)
+	window.writeln("[S] Echo reply sent to " + str(father) + "with payload: " + str(payload))
 
 
 
@@ -284,47 +313,6 @@ def check_socket_recv(peer, window):
 			process_echo_reply(peer, window, message_dec_recv, address)
 	except error:
 		pass
-
-def send_echo_size(peer, window):
-	"""
-	Initiate echo wave to gain size to neighbors
-	"""
-	global payload_counter
-	window.writeln("INIT: " + str(payload_counter))
-	# create echo message
-	global sequencenumber
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_SIZE, 0)
-
-	# Sent to all neighbors
-	for i in neighbors:
-		location, address = i
-		peer.sendto(pong_enc_sent, address)
-		
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1), OP_SIZE, 0)")
-
-	# Increment sequencenumber
-	sequencenumber += 1
-
-
-def send_echo_reply_size(peer, window, message, address, payload, operation = OP_SIZE):
-	"""
-	Send reply to sender
-	"""
-	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], operation, payload)
-	peer.sendto(pong_enc_sent, address)
-	window.writeln("[S] Echo reply sent to " + str(father) + "with payload: " + str(payload))
-
-#######################
-
-########## TASK 3 ##########
-"""
-def send_echo_reply_size(peer, window, message, address, size):
-	global father
-	global network_size
-	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], OP_SIZE, network_size)
-	peer.sendto(pong_enc_sent, father)
-	window.writeln("Echo reply sent to " + str(father))
-"""
 
 def socket_subscribe_mcast(sock, ip):
 	"""

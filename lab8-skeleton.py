@@ -87,7 +87,7 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window, operation):
+def send_echo(peer,window):
 	"""
 	Initiate echo wave to neighbors
 	"""
@@ -100,7 +100,7 @@ def send_echo(peer,window, operation):
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ str(operation) + ", 0)")
+	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ " OP_NOOP, 0)")
 
 	# Increment sequencenumber
 	sequencenumber += 1
