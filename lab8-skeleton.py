@@ -52,14 +52,18 @@ def send_pong(peer, initiator, address):
 	pong_enc_sent = message_encode(MSG_PONG, 0, initiator, pong_location)
 	peer.sendto(pong_enc_sent, address)
 
-
-def move():
+#TODO: Changed for testing
+def move(inputx = -1, inputy = -1):
 	"""
 	Creates random position for node in 100 x 100 grid
 	"""
 	global nx, ny,  node_location
-	nx = random.randint(0, GRID_SIZE)
-	ny = random.randint(0, GRID_SIZE)
+	if(inputx == -1 and inputy == -1):
+		nx = random.randint(0, GRID_SIZE)
+		ny = random.randint(0, GRID_SIZE)
+	else:
+		nx = inputx
+		ny = inputy
 	node_location = (nx,ny)
 	return node_location
 
@@ -343,7 +347,7 @@ def main(argv):
 	# Set up position node
 	move()
 	
-	# FOR TESTING ONLY!!
+	#TODO FOR TESTING ONLY!!
 	if(len(argv) == 3):
 		nx = int(argv[1])
 		ny = int(argv[2])
@@ -378,6 +382,7 @@ def main(argv):
 
 		# Get commands input
 		command = window.getline()
+		test = command.split(" ")
 		if (command == "ping"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending ping over multicast...")
@@ -391,7 +396,12 @@ def main(argv):
 			window.writeln("> Command entered: " + command)
 			new_location = move()
 			window.writeln("New location:" + str(new_location))
-
+		#TODO: For testing only
+		elif (test[0] == "testmove"):
+			window.writeln("> Command entered: " + command)
+			new_location = move(int(test[1]), int(test[2]))
+			window.writeln("New location:" + str(new_location))
+			print node_location
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			send_echo(peer, window)
