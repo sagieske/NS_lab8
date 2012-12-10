@@ -167,14 +167,13 @@ def process_echo(peer, window, message, address):
 			if(message[4] == OP_SIZE):
 				window.writeln("-> Immediate reply: Only 1 neighbor, size")
 				send_echo_reply_size(peer, window, message, father, 1, last_wave_type)
-			elif(message[4] == OP_SUM):
+			elif(message[4] == OP_NOOP):
+				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
+				send_echo_reply(peer,window, message, father)
+			else:
 				window.writeln("-> Immediate reply: Only 1 neighbor, sum")
 				window.writeln("Sensorvalue: " + str(sensorvalue))
 				send_echo_reply_size(peer, window, message, father, sensorvalue, last_wave_type)
-			else:
-				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
-				send_echo_reply(peer,window, message, father)
-
 
 		# If more neighbors, send echo to them all
 		elif(len(neighbors) > 1):
@@ -222,6 +221,14 @@ def process_echo_reply(peer, window, message, address):
 		elif(last_wave_type == OP_SIZE):
 			window.writeln("OP_SIZE last wave")
 			payload_counter += 1
+		elif(last_wave_type == OP_MIN):
+			window.writeln("OP_MIN last wave")
+			window.writeln("sensorvalue: " + str(sensorvalue) + " or payload: " + str(payload))
+			payload_counter = min(sensorvalue, payload)
+		elif(last_wave_type == OP_MAX):
+			window.writeln("OP_MAX last wave")
+			payload_counter = max(sensorvalue, payload)
+
 		window.writeln("->Reply from ALL neighbors")
 		# Node was initiator
 		if(initiator == node_location):
@@ -237,7 +244,7 @@ def process_echo_reply(peer, window, message, address):
 				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)	
 			else:
 				send_echo_reply_size(peer, window, message, father, payload_counter, last_wave_type)					
-				#send_echo_reply(peer,window, message, father)
+
 		echo_reply_counter = 0
 		payload_counter = 0	
 
@@ -440,13 +447,13 @@ def main(argv):
 			window.writeln("Computing size...")
 			window.writeln("START PAYLOAD: " + str(payload_counter))
 			send_echo(peer, window, OP_SIZE)
-		elif(command == "sensor sum"):
+		elif(command == "sum"):
 			window.writeln("> Command entered: " + command)
 			send_echo(peer, window, OP_SUM)
-		elif(command == "sensor minimum"):
+		elif(command == "min"):
 			window.writeln("> Command entered: " + command)
 			send_echo(peer, window, OP_MIN)
-		elif(command == "sensor maximum"):
+		elif(command == "max"):
 			window.writeln("> Command entered: " + command)
 			send_echo(peer, window, OP_MAX)
 		elif(command == "value"):
