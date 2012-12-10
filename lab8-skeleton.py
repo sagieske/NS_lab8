@@ -209,12 +209,14 @@ def process_echo_reply(peer, window, message, address):
 			peer.sendto(echorep_enc_sent, address)
 			window.writeln("Send echo reply to: " + str(address))
 	# FIXME: waarom werkt dit niet???
+	"""
 	elif((len(neighbors)-1) == reply_counter):
 		print "poep"
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to father			
 		peer.sendto(echorep_enc_sent, address)
 		window.writeln("Send echo reply to: " + str(address))
+		"""
 	
 # Echo wave stops and counter is reset
 def decide():
