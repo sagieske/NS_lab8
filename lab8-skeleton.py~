@@ -161,7 +161,7 @@ def process_echo(peer, window, message, address):
 		if(len(neighbors) == 1):
 			if(message[4] == OP_SIZE):
 				window.writeln("-> Immediate reply: Only 1 neighbor, size")
-				send_echo_reply_size(peer, window, message, father, 1)
+				send_echo_reply_size(peer, window, message, father, 1, OP_SIZE)
 			else:
 				window.writeln("-> Immediate reply: Only 1 neighbor----> ")
 				send_echo_reply(peer,window, message, father)
@@ -179,6 +179,8 @@ def process_echo(peer, window, message, address):
 
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
+
+#TODO: LAST MESSAGE FOR ECHO SIZE IS A DOUBLE WAVE -> THINGS GO WRONG
 	window.writeln("PROCESS")
 	"""
 	Process received MSG_ECHO_REPLY
@@ -187,7 +189,7 @@ def process_echo_reply(peer, window, message, address):
 	global father
 	global payload_counter
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
-
+	window.writeln("(process_echo_reply: OPERATION: " + str(operation))
 	# Increment reply counter	
 	echo_reply_counter += 1
 
@@ -209,11 +211,13 @@ def process_echo_reply(peer, window, message, address):
 			decide()
 		# Send echo reply to father		
 		else:
+			# HIER GAAT IETS FOUT??!)
 			if(message[4] == OP_SIZE):
 				window.writeln("OP_SIZE")
-				send_echo_reply_size(peer, window, message, father, payload_counter)	
+				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)	
 			else:
-				send_echo_reply(peer,window, message, father)
+				send_echo_reply_size(peer, window, message, father, payload_counter, OP_SIZE)					
+				#send_echo_reply(peer,window, message, father)
 		echo_reply_counter = 0
 		payload_counter = 0	
 
@@ -250,7 +254,7 @@ def send_echo_reply_size(peer, window, message, address, payload, operation):
 	"""
 	Send reply to sender to gain size
 	"""
-	window.writeln("Operation: " + str(operation))
+	window.writeln("(send_echo_reply_size: OPERATION: " + str(operation))
 	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], operation, payload)
 	peer.sendto(pong_enc_sent, address)
 	window.writeln("[S] Echo reply sent to " + str(address) + "with payload: " + str(payload) + " and operation: " + str(operation))
