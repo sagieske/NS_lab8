@@ -14,8 +14,6 @@ from socket import *
 
 reply_counter = 0 # Counter for replies received from neighbors
 
-father = (-1, -1)
-
 ########### Task 1 #############
 def setup_globals():
 	# Create global variable
@@ -152,27 +150,7 @@ def process_echo(peer, window, message, address):
 
 	# If more neighbors, send echo to them all
 	elif(len(neighbors) > 1):
-<<<<<<< HEAD
-		sequence = sequence + 1
-		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
-		pong_enc_sent = message_encode(MSG_ECHO,  sequence, node_location, (-1,-1), OP_NOOP, 0)
-
-		# Send to all neighbors
-		for i in neighbors:
-			location, address = i
-			# If known father, do not send back to father
-			if(initiator == location):
-				print 'YOOOOO'
-				pass
-			else:
-				peer.sendto(pong_enc_sent, address)
-
-		# Debug line
-		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(sequence))	
-		window.writeln("Wave2: " + str(wave))
-=======
 		send_wave_further(peer,window, message, address)
->>>>>>> 0e839896aef89fc74606509f15ebcc10794422ad
 	else:
 		print "Something went wrong..."
 	
@@ -192,7 +170,7 @@ def process_echo_reply(peer, window, message, address):
 	window.writeln("Reply counter: "  + str(echo_reply_counter))
 	window.writeln("Neighbors counter: "  + str(len(neighbors)))
 	# Reply from all neighbors
-	if(len(neighbors) == echo_reply_counter):
+	if(len(neighbors) == reply_counter):
 		window.writeln("Reply from ALL neighbors")		
 		print 'Neighbors: ', len(neighbors)
 		# Node was initiator
@@ -201,24 +179,7 @@ def process_echo_reply(peer, window, message, address):
 			decide()
 		# Send echo reply to father		
 		elif(initiator != node_location):
-<<<<<<< HEAD
-			# Encode message
-			print "blabla"
-			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
-			# Send echo reply to father			
-			peer.sendto(echorep_enc_sent, address)
-			window.writeln("Send echo reply to: " + str(address))
-			window.writeln("DOING IT WRONG? ")
-			window.writeln("Send echo reply to father: " + str(father))
-	# FIXME: waarom werkt dit niet??? FIXED
-	elif((len(neighbors)-1) == reply_counter):
-		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
-		# Send echo reply to father			
-		peer.sendto(echorep_enc_sent, father)
-		window.writeln("Send echo reply to FATHER: " + str(father))
-=======
 			send_echo_reply(peer,window, message, father)
->>>>>>> 0e839896aef89fc74606509f15ebcc10794422ad
 
 	
 # Echo wave stops and counter is reset

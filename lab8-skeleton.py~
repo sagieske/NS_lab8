@@ -83,6 +83,31 @@ def list(window):
 ########### Task 2 #############
 
 # FOR FIRST ECHO (Task 2.1)
+# Send echo first time around
+def send_echo_first(peer,window):
+	pong_enc_sent = message_encode(MSG_ECHO,  seqnumber, node_location, (-1,-1), OP_NOOP, 0)
+		# Sent to all neighbors
+	for i in neighbors:
+		location, address = i
+		peer.sendto(pong_enc_sent, address)
+		
+	window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(seqnumber) + "," + str(father) + "(-1,-1), OP_NOOP, 0)")
+	window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
+
+def send_wave_further(peer,window, message, address):
+	# Only one neighbor, which is father, send reply
+	if(len(neighbors) == 1):
+		send_echo_reply(peer,window,message, address)
+	else:
+		for i in neighbors:
+			location, address = i
+			if(address != father):
+				location, address = i
+				peer.sendto(pong_enc_sent, address)
+			else: 
+				pass
+				
+	
 def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 	"""
 	Send echo to all neighbors
@@ -112,7 +137,7 @@ def send_echo(peer,window, father = (-1,-1), seqnumber = 0):
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
-				window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(seqnumber) + "," + str(father) "(-1,-1), OP_NOOP, 0)")
+				window.writeln("MSG_ECHO_REPLY, message sent: (MSG_ECHO_REPLY," + str(seqnumber) + "," + str(father) + "(-1,-1), OP_NOOP, 0)")
 				window.writeln("Echo sent echo reply to : " + str(father) + "\tSequence: " + str(seqnumber))	
 
 		# Debug line
