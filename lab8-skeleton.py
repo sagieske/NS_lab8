@@ -226,7 +226,7 @@ def process_echo_reply(peer, window, message, address):
 		# Node was initiator
 		if(initiator == node_location):
 			#payload_counter += 1
-			window.writeln("I AM INITIATOR! DECIDED \n")
+			window.writeln("I AM INITIATOR! DECIDED")
 			window.writeln("Payload = " + str(payload_counter))
 			decide()
 		# Send echo reply to father		

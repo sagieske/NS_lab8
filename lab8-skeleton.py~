@@ -149,17 +149,15 @@ def process_echo(peer, window, message, address):
 	type, sequence, initiator, neighbor_pos, operation, payload = message
 	wave = (sequence, initiator)
 	last_wave_type, last_wave_id = last_wave
-	window.writeln("CHECK: " + str(message))
 
 	# If already received  immediately send echo_reply to sender
 	if(wave == last_wave_id):
-		window.writeln("Sending with message : " + str(message[4]))
 		window.writeln("-> Immediate reply: Double wave")
 		if(operation == OP_NOOP):
 			send_echo_reply(peer,window, message, address)
 		else:
 			send_echo_reply_size(peer,window, message, address,payload, OP_NOOP)
-			window.writeln("Send message to: " + str(address) + " father is: " +str(father))
+
 	else:
 		# Make sender father:
 		father = address
