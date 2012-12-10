@@ -14,6 +14,8 @@ from socket import *
 
 reply_counter = 0 # Counter for replies received from neighbors
 
+father = (-1, -1)
+
 ########### Task 1 #############
 def setup_globals():
 	# Create global variable
@@ -219,7 +221,7 @@ def process_echo_reply(peer, window, message, address):
 			window.writeln("Send echo reply to: " + str(address))
 			window.writeln("DOING IT WRONG? ")
 			window.writeln("Send echo reply to father: " + str(father))
-	# FIXME: waarom werkt dit niet???
+	# FIXME: waarom werkt dit niet??? FIXED
 	elif((len(neighbors)-1) == reply_counter):
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to father			
