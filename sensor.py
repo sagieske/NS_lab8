@@ -25,7 +25,7 @@ PING_PERIOD = 5.0
 
 ## The grid size and sensor range.
 #TODO: CHANGE BEFORE HAND IN!!
-GRID_SIZE    = 75
+GRID_SIZE    = 100
 SENSOR_RANGE = 50
 
 
