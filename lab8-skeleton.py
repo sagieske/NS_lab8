@@ -136,23 +136,26 @@ def process_echo(peer, window, message, address):
 	global father
 	father = address
 
-	window.writeln("Father is set. : " + str(father))
-
+	print 'Wave1: ', wave
 	global last_wave	
 	window.writeln("LAST WAVE = " + str(last_wave))
 
-	
-	# If already received or only 1 neighbor, immediately send echo_reply to father
+
+	# If already received or only 1 neighbor
 	if((wave == last_wave) or len(neighbors) == 1):
 		if((wave == last_wave)):
-			window.writeln("Immediate reply: Double wave")
+			window.writeln("Double wave")
 		else:
-			window.writeln("Immediate reply: Only 1 neighbor")
-		send_echo_reply(peer,window, message, address)
+			window.writeln("Only 1 neighbor")
+		# Encode message
+		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
+		# Send echo reply to sender		
+		peer.sendto(echorep_enc_sent, address)
+		window.writeln("Send echo reply to: " + str(address))
+		window.writeln("HERE?")
 
 	# If more neighbors, send echo to them all
 	elif(len(neighbors) > 1):
-<<<<<<< HEAD
 		sequence = sequence + 1
 		# Encode message. Neighbor location not needed -> -1, -1 not possible for grid location
 		pong_enc_sent = message_encode(MSG_ECHO,  sequence, node_location, (-1,-1), OP_NOOP, 0)
@@ -162,7 +165,6 @@ def process_echo(peer, window, message, address):
 			location, address = i
 			# If known father, do not send back to father
 			if(initiator == location):
-				print 'YOOOOO'
 				pass
 			else:
 				peer.sendto(pong_enc_sent, address)
@@ -170,38 +172,34 @@ def process_echo(peer, window, message, address):
 		# Debug line
 		window.writeln("Echo sent with init from: " + str(node_location) + "\tSequence: " + str(sequence))	
 		window.writeln("Wave2: " + str(wave))
-=======
-		send_wave_further(peer,window, message, address)
->>>>>>> 0e839896aef89fc74606509f15ebcc10794422ad
 	else:
 		print "Something went wrong..."
-	
+
 	# Set wave as last wave
 	last_wave = wave
+
 		
 	
 # Process ECHO_REPLY message	
 def process_echo_reply(peer, window, message, address):
-	global echo_reply_counter
+	global reply_counter
 	global father
-
+	window.writeln("1: "  + str(reply_counter))
 	type, sequence, initiator, neighbor_pos, operation, payload = message	
 	# Increment reply counter	
-	echo_reply_counter += 1
-	
-	window.writeln("Reply counter: "  + str(echo_reply_counter))
-	window.writeln("Neighbors counter: "  + str(len(neighbors)))
+	reply_counter += 1
+	window.writeln("2: "  + str(reply_counter))
+
+	window.writeln("address: "  + str(address))
 	# Reply from all neighbors
-	if(len(neighbors) == echo_reply_counter):
-		window.writeln("Reply from ALL neighbors")		
+	if(len(neighbors) == reply_counter):
 		print 'Neighbors: ', len(neighbors)
 		# Node was initiator
 		if(initiator == node_location):
-			window.writeln("I AM INITIATOR! DECIDED \n")
+			window.writeln("Decide!")
 			decide()
 		# Send echo reply to father		
 		elif(initiator != node_location):
-<<<<<<< HEAD
 			# Encode message
 			print "blabla"
 			echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
@@ -210,15 +208,12 @@ def process_echo_reply(peer, window, message, address):
 			window.writeln("Send echo reply to: " + str(address))
 			window.writeln("DOING IT WRONG? ")
 			window.writeln("Send echo reply to father: " + str(father))
-	# FIXME: waarom werkt dit niet??? FIXED
+	# FIXME: waarom werkt dit niet???
 	elif((len(neighbors)-1) == reply_counter):
 		echorep_enc_sent = message_encode(MSG_ECHO_REPLY,  sequence, initiator, neighbor_pos, operation, payload)
 		# Send echo reply to father			
 		peer.sendto(echorep_enc_sent, father)
 		window.writeln("Send echo reply to FATHER: " + str(father))
-=======
-			send_echo_reply(peer,window, message, father)
->>>>>>> 0e839896aef89fc74606509f15ebcc10794422ad
 
 	
 # Echo wave stops and counter is reset
