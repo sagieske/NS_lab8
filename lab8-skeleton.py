@@ -87,21 +87,20 @@ def list(window):
 
 ########### Task 2 #############
 
-def send_echo(peer,window):
+def send_echo(peer,window, operation):
 	"""
 	Initiate echo wave to neighbors
 	"""
 	# create echo message
 	global sequencenumber
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_NOOP, 0)
+	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), operation, 0)
 
 	# Sent to all neighbors
 	for i in neighbors:
 		location, address = i
 		peer.sendto(pong_enc_sent, address)
 
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ " OP_NOOP, 0)")
-
+	window.writeln("-> message sent: (MSG_ECHO," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1),"+ str(operation)+" , 0)")
 
 	# Increment sequencenumber
 	sequencenumber += 1
@@ -230,27 +229,7 @@ def decide():
 	global echo_reply_counter
 	echo_reply_counter = 0
 
-### TASK 3
-def send_echo_size(peer, window):
-	"""
-	Initiate echo wave to gain size to neighbors
-	"""
-	global payload_counter
-	window.writeln("INIT: " + str(payload_counter))
-	# create echo message
-	global sequencenumber
-	pong_enc_sent = message_encode(MSG_ECHO,  sequencenumber, node_location, (-1,-1), OP_SIZE, 0)
-
-	# Sent to all neighbors
-	for i in neighbors:
-		location, address = i
-		peer.sendto(pong_enc_sent, address)
-		
-	window.writeln("-> message sent: (MSG_ECHO_REPLY," + str(sequencenumber) + "," + str(node_location) + ",(-1,-1), OP_SIZE, 0)")
-
-	# Increment sequencenumber
-	sequencenumber += 1
-
+###### TASK 3 #####
 
 def send_echo_reply_size(peer, window, message, address, payload, operation):
 	"""
@@ -260,6 +239,8 @@ def send_echo_reply_size(peer, window, message, address, payload, operation):
 	pong_enc_sent = message_encode(MSG_ECHO_REPLY,  message[1], message[2], message[3], operation, payload)
 	peer.sendto(pong_enc_sent, address)
 	window.writeln("[S] Echo reply sent to " + str(address) + "with payload: " + str(payload) + " and operation: " + str(operation))
+
+###### TASK 4 ######
 
 
 
@@ -431,11 +412,11 @@ def main(argv):
 		elif (command == "echo"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Sending echo...")
-			send_echo(peer, window)
+			send_echo(peer, window, OP_NOOP)
 		elif (command == "size"):
 			window.writeln("> Command entered: " + command)
 			window.writeln("Computing size...")
-			send_echo_size(peer, window)
+			send_echo(peer, window, OP_SIZE)
 
 		elif (command == ""):
 			pass
